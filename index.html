@@ -81,6 +81,8 @@ tr.h-g td:first-child{box-shadow:inset 4px 0 0 #34c27a}tr.h-a td:first-child{box
 tr.h-g td{background:#34c27a0d}tr.h-a td{background:#d9a4410d}tr.h-r td{background:#df61500f}
 tr.h-g td:nth-child(-n+2){background:#18201b}tr.h-a td:nth-child(-n+2){background:#201d16}tr.h-r td:nth-child(-n+2){background:#221716}
 .s-ok{border-color:#2e7d55!important;color:#8fe0b4!important}.s-mid{border-color:#8a6d2f!important;color:#f0cc85!important}
+td select.c-g,td input.c-g{background:#34c27a24!important;border-color:#2e7d55!important;color:#c3f0d6!important}td select.c-a,td input.c-a{background:#d9a4412a!important;border-color:#8a6d2f!important;color:#f5d798!important}td select.c-r,td input.c-r{background:#df615028!important;border-color:#a3473b!important;color:#f6b5ab!important}
+td select option{background:#16171a;color:#ececee}
 td input[type=number]{max-width:56px;text-align:center;-moz-appearance:textfield}td input[type=number]::-webkit-inner-spin-button{opacity:.4}
 .rohint{display:none}body.ro .rohint{display:block}
 #eh.on{border-color:var(--acc);color:var(--acc)}
@@ -172,7 +174,7 @@ dialog::backdrop{background:#000000b3;backdrop-filter:blur(3px)}
   <label style="display:flex;gap:6px;align-items:center;font-size:14px"><input type="checkbox" id="fod" style="min-height:20px;width:20px"> No follow-up in 14+ days</label>
  </div>
  <datalist id="ownlist"></datalist>
- <div class="hleg"><span><i style="background:#34c27a"></i>Green: all items aligned</span><span><i style="background:#d9a441"></i>Amber: briefed, some items open</span><span><i style="background:#df6150"></i>Red: outstanding, no follow-up in 14+ days</span><span><i style="background:#3a3f47"></i>Plain: not started</span></div>
+ <div class="hleg"><span style="color:var(--ink)">Each cell turns <b style="color:#8fe0b4">green</b> when done, <b style="color:#f0cc85">amber</b> while pending and <b style="color:#f6b5ab">red</b> when the follow-up has stalled. The dealer stripe:</span><span><i style="background:#34c27a"></i>Green: all items aligned</span><span><i style="background:#d9a441"></i>Amber: briefed, some items open</span><span><i style="background:#df6150"></i>Red: outstanding, no follow-up in 14+ days</span><span><i style="background:#3a3f47"></i>Plain: not started</span></div>
  <p class="rohint note" style="margin:0 0 10px">Your changes save on this device. Click <b>🔑 Connect to edit</b> at the top to share them with the team and to upload proofs.</p>
  <div class="scroll"><table id="tbl"><colgroup id="cg"></colgroup><thead><tr>
   <th>Dealer</th><th>Region</th><th class="n" title="TV / digital screens (edit the count)">TV</th><th class="n" title="A0 clip-on poster frames (edit the count)">A0</th><th class="n" title="N-Line branded display spaces (edit the count)">NL</th><th>Register</th><th>HQ owner</th><th>Last follow-up</th><th>A0 posters</th><th>Billboard</th><th>TV content</th><th>N-Line vehicle</th><th>Proofs</th>
@@ -217,8 +219,9 @@ const A0T=['','Latest campaign KV / TVC','Model / product poster','Monthly speci
 const KV=A0T[1];
 const BBH=['','Yes','No','In progress','No plan'];
 const BBC={'Yes':G,'In progress':A,'No':MID,'No plan':DK,'':GR};
-const TVS=['No action yet','Briefed – pending','Content shared','No screen'];
-const TVSC={'No action yet':GR,'Briefed – pending':A,'Content shared':G,'No screen':DK};
+const LOADED='Content loaded on screen';
+const TVS=['No action yet','Briefed – pending','Content shared',LOADED,'No screen'];
+const TVSC={'No action yet':GR,'Briefed – pending':A,'Content shared':'#e0b964',[LOADED]:G,'No screen':DK};
 const NLV=['','Venue N Line','Creta N Line','Tucson N Line','Grand i10','i20','Venue','Creta','Tucson','Alcazar','Santa Fe','Palisade','Staria','Other'];
 const KINDS=[['bb','Billboard'],['a0','A0 snapper frame'],['nl','N-Line display'],['tv','TV / digital screen']];
 const BBT=['','Pylon / totem','Wall-mounted static','Rooftop static','Freestanding static','LED digital'];
@@ -232,7 +235,7 @@ function migrate(s){
   if(['Mark','Joe','Namhla','Nontokozo','Aubrey'].includes(d.owner)&&!d.ownerSet)d.owner='';
   if(d.a0Type===undefined)d.a0Type=['Installed / live','Installed'].includes(d.poster)?KV:'';
   if(d.bbHas===undefined)d.bbHas=d.bb>0?'Yes':d.bb===0?'No':'';
-  if(d.tvSt===undefined)d.tvSt=['Uploaded & live','Running','Downloaded','Content sent'].includes(d.screensSt)?'Content shared':d.screensSt==='No screen'?'No screen':'No action yet';
+  if(d.tvSt===undefined)d.tvSt=['Uploaded & live','Running'].includes(d.screensSt)?LOADED:['Downloaded','Content sent'].includes(d.screensSt)?'Content shared':d.screensSt==='No screen'?'No screen':'No action yet';
   if(d.nlVeh===undefined)d.nlVeh=NLV.includes(d.nlineVeh)?d.nlineVeh:'';
   d.proofs=d.proofs||[];d.log=d.log||[];for(const k of['tvAd','a0Ad','bbAd','owner','lastContact'])d[k]=d[k]||'';
  }return s}
@@ -241,7 +244,7 @@ const today=()=>new Date().toISOString().slice(0,10);
 const ago=n=>new Date(Date.now()-n*864e5).toISOString().slice(0,10);
 /* each dealer's checklist: TV content shared, A0 on latest KV, billboard decided, N-Line vehicle set, register confirmed */
 function items(d){const it=[['reg',d.reg==='Confirmed']];
- if((+d.screens||0)>0&&d.tvSt!=='No screen')it.push(['tv',d.tvSt==='Content shared']);
+ if((+d.screens||0)>0&&d.tvSt!=='No screen')it.push(['tv',d.tvSt===LOADED]);
  if((+d.a0||0)>0)it.push(['a0',d.a0Type===KV]);
  it.push(['bb',['Yes','No','No plan'].includes(d.bbHas)]);
  if((+d.nline||0)>0)it.push(['nl',!!d.nlVeh]);return it}
@@ -249,7 +252,16 @@ const started=d=>d.reg!=='Pending'||d.a0Type||d.bbHas||d.tvSt!=='No action yet'|
 const complete=d=>items(d).every(x=>x[1]);
 const overdue=d=>started(d)&&!complete(d)&&(!d.lastContact||d.lastContact<ago(14));
 function health(d){if(!started(d))return['none','Not started'];if(complete(d))return['g','All aligned'];if(overdue(d))return['r','Outstanding: no follow-up in 14+ days'];return['a','In progress: some items still open']}
-const cls=v=>['Confirmed','Content shared','Yes',KV].includes(v)?'s-ok':['Briefed','Briefed – pending','In progress','Awaiting reply','Contacted'].includes(v)?'s-mid':'';
+/* every line item gets its own colour: green done, amber pending, red stalled, grey nothing yet */
+function cc(f,d){const v=d[f];switch(f){
+ case 'reg':return v==='Confirmed'?'c-g':v==='Pending'?'':'c-a';
+ case 'owner':return v?'c-g':'';
+ case 'lastContact':return !v?'':(overdue(d)?'c-r':'c-g');
+ case 'a0Type':return (+d.a0||0)===0&&!v?'':v===KV?'c-g':v?'c-a':'';
+ case 'bbHas':return ['Yes','No','No plan'].includes(v)?'c-g':v==='In progress'?'c-a':'';
+ case 'tvSt':return v===LOADED||v==='No screen'?'c-g':['Briefed – pending','Content shared'].includes(v)?'c-a':'';
+ case 'nlVeh':return v?'c-g':'';}return ''}
+const cls=v=>'';
 const opts=(list,v)=>list.map(o=>`<option value="${esc(o)}"${o===v?' selected':''}>${esc(o||'Select…')}</option>`).join('');
 const fmtD=s=>s?new Date(s+'T00:00').toLocaleDateString('en-ZA',{day:'numeric',month:'short'}):'';
 const owners=()=>[...new Set(S.dealers.map(d=>d.owner).filter(Boolean))].sort();
@@ -276,31 +288,31 @@ function summary(){
   ring('Dealer registers','reg',REG.slice().reverse().map(s=>[s,D.filter(d=>d.reg===s).length,REGC[s]]),n,conf),
   ring('A0 snapper frames','a0',[['Latest campaign KV',w('a0',d=>d.a0Type===KV),G],['Other poster content',w('a0',d=>d.a0Type&&d.a0Type!==KV),A],['Not set',w('a0',d=>!d.a0Type),GR]],a0,w('a0',d=>d.a0Type===KV)),
   ring('Billboards','bb',[['Has billboard',D.filter(d=>d.bbHas==='Yes').length,G],['In progress',D.filter(d=>d.bbHas==='In progress').length,A],['No billboard',D.filter(d=>d.bbHas==='No').length,MID],['No plan',D.filter(d=>d.bbHas==='No plan').length,DK],['Not checked',D.filter(d=>!d.bbHas).length,GR]],n,D.filter(d=>d.bbHas==='Yes').length,'Dealers with a billboard on premises'),
-  ring('TV / digital screens','tv',[['Content shared',w('screens',d=>d.tvSt==='Content shared'),G],['Briefed – pending',w('screens',d=>d.tvSt==='Briefed – pending'),A],['No action yet',w('screens',d=>d.tvSt==='No action yet'),GR],['No screen',w('screens',d=>d.tvSt==='No screen'),DK]],tv,w('screens',d=>d.tvSt==='Content shared')),
+  ring('TV / digital screens','tv',[['Content loaded on screen',w('screens',d=>d.tvSt===LOADED),G],['Content shared',w('screens',d=>d.tvSt==='Content shared'),'#e0b964'],['Briefed – pending',w('screens',d=>d.tvSt==='Briefed – pending'),A],['No action yet',w('screens',d=>d.tvSt==='No action yet'),GR],['No screen',w('screens',d=>d.tvSt==='No screen'),DK]],tv,w('screens',d=>d.tvSt===LOADED)),
   ring('N-Line stands','nl',[...nlTop.slice(0,3).map(([v,c],i)=>[v,c,[G,'#2a9d64','#22804f'][i]]),...(nlTop.length>3?[['Other vehicles',nlTop.slice(3).reduce((a,x)=>a+x[1],0),'#1d6b43']]:[]),['No vehicle set',nl-nlSet,GR]],nl,nlSet,'Champion vehicle on display this month')
  ].join('');
  const regs=[...new Set(D.map(d=>d.region))];
  $('#regions').innerHTML=regs.map(r=>{const g=D.filter(d=>d.region===r),c=g.filter(d=>d.reg==='Confirmed').length;
   return `<div class="reg" data-r="${esc(r)}" title="Filter to ${esc(r)}"><b>${esc(r)}</b><div class="bar">${REG.slice().reverse().map(s=>{const x=g.filter(d=>d.reg===s).length;return x?`<i style="width:${x/g.length*100}%;background:${REGC[s]}" title="${esc(s)}: ${x}"></i>`:''}).join('')}</div><small>${c}/${g.length} confirmed · ${g.reduce((a,d)=>a+(+d.screens||0),0)} TV · ${g.reduce((a,d)=>a+(+d.a0||0),0)} A0 · ${g.reduce((a,d)=>a+(+d.nline||0),0)} NL</small></div>`}).join('');
  $('#legend').innerHTML=REG.map(s=>`<span><i style="background:${REGC[s]}"></i>${s}</span>`).join('');
- const RW=[['A0 posters',d=>(+d.a0||0)>0,d=>d.a0Type===KV?G:d.a0Type?A:GR,'on latest KV'],['Billboards',()=>true,d=>BBC[d.bbHas]||GR,'decided'],['TV content',d=>(+d.screens||0)>0&&d.tvSt!=='No screen',d=>TVSC[d.tvSt]||GR,'shared'],['N-Line vehicle',d=>(+d.nline||0)>0,d=>d.nlVeh?G:GR,'vehicle set'],['Dealer status',()=>true,d=>({g:G,a:A,r:RD,none:GR})[health(d)[0]],'fully aligned']];
- const order=[G,'#2a9d64',A,'#b08a3e',MID,RD,DK,GR];
+ const RW=[['A0 posters',d=>(+d.a0||0)>0,d=>d.a0Type===KV?G:d.a0Type?A:GR,'on latest KV'],['Billboards',()=>true,d=>BBC[d.bbHas]||GR,'decided'],['TV content',d=>(+d.screens||0)>0&&d.tvSt!=='No screen',d=>TVSC[d.tvSt]||GR,'loaded on screen'],['N-Line vehicle',d=>(+d.nline||0)>0,d=>d.nlVeh?G:GR,'vehicle set'],['Dealer status',()=>true,d=>({g:G,a:A,r:RD,none:GR})[health(d)[0]],'fully aligned']];
+ const order=[G,'#2a9d64','#e0b964',A,'#b08a3e',MID,RD,DK,GR];
  $('#roll').innerHTML=RW.map(([l,app,col,word])=>{const P=D.filter(app),m=P.length;const cnt={};P.forEach(d=>{const c=col(d);cnt[c]=(cnt[c]||0)+1});const done=cnt[G]||0;
   return `<div class="mini"><span>${l}</span><div class="bar">${order.filter(c=>cnt[c]).map(c=>`<i style="width:${cnt[c]/(m||1)*100}%;background:${c}"></i>`).join('')}</div><small class="n" title="${done} of ${m} ${word}">${done}/${m}</small></div>`}).join('')+
-  `<div class="legend"><span><i style="background:${G}"></i>Done / shared</span><span><i style="background:${A}"></i>Briefed / in progress</span><span><i style="background:${RD}"></i>Outstanding</span><span><i style="background:${GR}"></i>No action yet</span></div>`;
+  `<div class="legend"><span><i style="background:${G}"></i>Done / loaded</span><span><i style="background:${A}"></i>Briefed / in progress</span><span><i style="background:${RD}"></i>Outstanding</span><span><i style="background:${GR}"></i>No action yet</span></div>`;
 }
 
 const num=(f,v)=>`<input type="number" min="0" inputmode="numeric" data-f="${f}" value="${esc(v??'')}" placeholder="?" aria-label="${f}">`;
 function row(d){const [h,ht]=health(d),od=overdue(d);
  return `<tr data-id="${esc(d.id)}" class="h-${h}"><td title="${esc(ht)}"><button class="bn" data-open type="button">${esc(d.branch.replace(/^Hyundai /,''))}</button></td><td>${esc(d.region)}</td>
  <td class="n">${num('screens',d.screens)}</td><td class="n">${num('a0',d.a0)}</td><td class="n">${num('nline',d.nline)}</td>
- <td><select data-f="reg" class="${cls(d.reg)}">${opts(REG,d.reg)}</select></td>
- <td><input type="text" data-f="owner" list="ownlist" value="${esc(d.owner)}" placeholder="Type name" autocomplete="off"></td>
- <td><input type="date" data-f="lastContact" value="${esc(d.lastContact)}" max="${today()}" class="${od?'s-bad':''}" title="${od?'No follow-up in 14+ days':''}"></td>
- <td><select data-f="a0Type" class="${cls(d.a0Type)}" title="${esc(d.a0Ad)}">${opts(A0T,d.a0Type)}</select></td>
- <td><select data-f="bbHas" class="${cls(d.bbHas)}">${opts(BBH,d.bbHas)}</select></td>
- <td><select data-f="tvSt" class="${cls(d.tvSt)}">${opts(TVS,d.tvSt)}</select></td>
- <td><select data-f="nlVeh" class="${d.nlVeh?'s-ok':''}">${opts(NLV,d.nlVeh)}</select></td>
+ <td><select data-f="reg" class="${cc('reg',d)}">${opts(REG,d.reg)}</select></td>
+ <td><input type="text" data-f="owner" class="${cc('owner',d)}" list="ownlist" value="${esc(d.owner)}" placeholder="Type name" autocomplete="off"></td>
+ <td><input type="date" data-f="lastContact" value="${esc(d.lastContact)}" max="${today()}" class="${cc('lastContact',d)}" title="${od?'No follow-up in 14+ days':''}"></td>
+ <td><select data-f="a0Type" class="${cc('a0Type',d)}" title="${esc(d.a0Ad)}">${opts(A0T,d.a0Type)}</select></td>
+ <td><select data-f="bbHas" class="${cc('bbHas',d)}">${opts(BBH,d.bbHas)}</select></td>
+ <td><select data-f="tvSt" class="${cc('tvSt',d)}">${opts(TVS,d.tvSt)}</select></td>
+ <td><select data-f="nlVeh" class="${cc('nlVeh',d)}">${opts(NLV,d.nlVeh)}</select></td>
  <td><button type="button" class="pf ${(d.proofs||[]).length?'has':''}" data-pv>${(d.proofs||[]).length?`Preview proofs (${(d.proofs||[]).length})`:'Add proof'}</button></td></tr>`;
 }
 function list(){
@@ -361,9 +373,10 @@ const NUMF=['screens','a0','nline'];
 $('#rows').addEventListener('input',e=>{const el=e.target,f=el.dataset.f;if(!NUMF.includes(f))return;const d=S.dealers.find(x=>x.id===el.closest('tr').dataset.id);d[f]=el.value===''?null:Math.max(0,+el.value||0);summary()});
 $('#rows').addEventListener('change',e=>{const el=e.target,f=el.dataset.f;if(!f)return;const tr=el.closest('tr'),d=S.dealers.find(x=>x.id===tr.dataset.id);
  const old=d[f];d[f]=NUMF.includes(f)?(el.value===''?null:Math.max(0,+el.value||0)):el.value.trim();if(f==='owner')d.ownerSet=true;
- if(f==='reg'&&['Briefed','Contacted','Awaiting reply','Confirmed'].includes(d.reg))d.lastContact=today();
+ if(['reg','a0Type','bbHas','tvSt','nlVeh'].includes(f)&&String(old??'')!==String(d[f]??'')&&!(f==='reg'&&d.reg==='Pending'))d.lastContact=today();
  if(String(old??'')!==String(d[f]??''))d.log.unshift({d:today(),t:`${NAMES[f]||f} → ${d[f]===''||d[f]==null?'cleared':d[f]}`});
- tr.outerHTML=row(d);summary();if(f==='owner')filters();touch()});
+ tr.outerHTML=row(d);summary();if(f==='owner')filters();touch();
+ if(f==='tvSt'&&d.tvSt===LOADED&&!d.proofs.some(p=>p.k==='tv'))toast('Marked as loaded. Add a photo of the screen with Add proof to close it off.')});
 $('#rows').addEventListener('click',e=>{const tr=e.target.closest('tr');if(!tr)return;if(e.target.closest('[data-open]'))openD(tr.dataset.id);if(e.target.closest('[data-pv]'))openV(tr.dataset.id)});
 $('#regions').addEventListener('click',e=>{const r=e.target.closest('.reg');if(!r)return;F.r=F.r===r.dataset.r?'':r.dataset.r;saveF();filters();list();$('#tbl').scrollIntoView({behavior:'smooth'})});
 [['#q','q','input'],['#fr','r','change'],['#fs','s','change'],['#fo','o','change'],['#fh','h','change']].forEach(([s,k,ev])=>$(s).addEventListener(ev,e=>{F[k]=e.target.value;saveF();list()}));
@@ -525,11 +538,11 @@ $('#xl').addEventListener('click',async()=>{
  for(let r=2;r<=last;r++){for(const[c,Ls]of Object.entries(lists))ws.getCell(c+r).dataValidation={type:'list',allowBlank:true,formulae:['"'+Ls.join(',')+'"']};
   const x=ws.getCell('H'+r);x.numFmt='dd mmm yyyy';x.dataValidation={type:'date',operator:'greaterThan',allowBlank:true,formulae:[new Date(Date.UTC(2020,0,1))],showErrorMessage:true,errorTitle:'Date',error:'Enter a date, e.g. 2026-12-03'}}
  ws.autoFilter={from:'A1',to:'X1'};
- const sm=wb.addWorksheet('Summary');sm.columns=[['Region',18],['Dealers',10],['Confirmed',11],['TV screens',11],['A0 frames',11],['N-Line spaces',12],['Dealers with billboard',14],['TV screens content shared',15],['A0 frames on latest KV',15],['N-Line spaces with vehicle',15],['Dealers all aligned',13]].map(([h,w])=>({header:h,width:w}));
+ const sm=wb.addWorksheet('Summary');sm.columns=[['Region',18],['Dealers',10],['Confirmed',11],['TV screens',11],['A0 frames',11],['N-Line spaces',12],['Dealers with billboard',14],['TV screens content loaded',15],['A0 frames on latest KV',15],['N-Line spaces with vehicle',15],['Dealers all aligned',13]].map(([h,w])=>({header:h,width:w}));
  const regs=[...new Set(S.dealers.map(d=>d.region))];const RR='Register!';
  regs.forEach((g,i)=>{const r=i+2,D=S.dealers.filter(d=>d.region===g),s2=(k,pred)=>D.filter(pred||(()=>true)).reduce((a,d)=>a+(+d[k]||0),0);
   const cnt=(col,v,pred)=>({formula:`COUNTIFS(${RR}A:A,A${r},${RR}${col}:${col},"${v}")`,result:D.filter(pred).length}),sum=(col,k)=>({formula:`SUMIF(${RR}A:A,A${r},${RR}${col}:${col})`,result:s2(k)}),sumif=(scol,ccol,v,k,pred)=>({formula:`SUMIFS(${RR}${scol}:${scol},${RR}A:A,A${r},${RR}${ccol}:${ccol},"${v}")`,result:s2(k,pred)});
-  sm.addRow([g,{formula:`COUNTIF(${RR}A:A,A${r})`,result:D.length},cnt('F','Confirmed',d=>d.reg==='Confirmed'),sum('C','screens'),sum('D','a0'),sum('E','nline'),cnt('K','Yes',d=>d.bbHas==='Yes'),sumif('C','O','Content shared','screens',d=>d.tvSt==='Content shared'),sumif('D','I',KV,'a0',d=>d.a0Type===KV),sumif('E','Q','?*','nline',d=>!!d.nlVeh),cnt('R','All aligned',d=>health(d)[0]==='g')])});
+  sm.addRow([g,{formula:`COUNTIF(${RR}A:A,A${r})`,result:D.length},cnt('F','Confirmed',d=>d.reg==='Confirmed'),sum('C','screens'),sum('D','a0'),sum('E','nline'),cnt('K','Yes',d=>d.bbHas==='Yes'),sumif('C','O',LOADED,'screens',d=>d.tvSt===LOADED),sumif('D','I',KV,'a0',d=>d.a0Type===KV),sumif('E','Q','?*','nline',d=>!!d.nlVeh),cnt('R','All aligned',d=>health(d)[0]==='g')])});
  const tr=regs.length+2,tot=['Total'];'BCDEFGHIJK'.split('').forEach(c=>tot.push({formula:`SUM(${c}2:${c}${tr-1})`}));sm.addRow(tot);
  sm.getRow(tr).font={bold:true};
  sm.getRow(1).eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1B1F25'}}});
