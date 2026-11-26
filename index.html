@@ -76,7 +76,7 @@ td:nth-child(-n+2),th:nth-child(-n+2){position:sticky;left:0;background:var(--ca
 td:nth-child(2),th:nth-child(2){left:var(--c0,150px);box-shadow:inset -1px 0 0 var(--g1),6px 0 8px -6px #000}
 tbody tr:hover td:nth-child(-n+2){background:var(--card2)}
 [data-lab]{border-radius:4px}body.editing [data-lab]{outline:1px dashed var(--g2);outline-offset:2px;cursor:text;padding:0 2px}body.editing [data-lab]:focus{outline:1px solid var(--acc);color:var(--ink)}
-body.ro #rows select,body.ro #rows input{cursor:pointer;opacity:.8}body.ro .rohint{display:block}body.ro #add,body.ro #eh,body.ro #drop,body.ro #vdel,body.ro #ok,body.ro #del,body.ro .logadd{display:none!important}
+body.ro #rows select,body.ro #rows input{cursor:pointer;opacity:.8}.rohint{display:none}body.ro .rohint{display:block}body.ro #add,body.ro #eh,body.ro #drop,body.ro #vdel,body.ro #ok,body.ro #del,body.ro .logadd{display:none!important}
 #eh.on{border-color:var(--acc);color:var(--acc)}
 td select,td input{min-height:34px;font-size:13.5px;padding:0 6px;background:transparent}
 td select{padding-right:4px}
@@ -164,7 +164,7 @@ dialog::backdrop{background:#000000b3;backdrop-filter:blur(3px)}
   <button type="button" id="eh" title="Rename column and section headings">Edit headings</button>
   <label style="display:flex;gap:6px;align-items:center;font-size:14px"><input type="checkbox" id="fod" style="min-height:20px;width:20px"> No follow-up in 14+ days</label>
  </div>
- <p class="rohint note" style="display:none;margin:0 0 10px">View only. Click <b>🔑 Connect to edit</b> at the top to change statuses, dates and owners, or to upload proofs.</p>
+ <p class="rohint note" style="margin:0 0 10px">View only. Click <b>🔑 Connect to edit</b> at the top to change statuses, dates and owners, or to upload proofs.</p>
  <div class="scroll"><table id="tbl"><colgroup id="cg"></colgroup><thead><tr>
   <th>Dealer</th><th>Region</th><th class="n" title="TV / digital screens">TV</th><th class="n" title="A0 clip-on poster frames">A0</th><th class="n" title="N-Line branded display spaces">NL</th><th class="n" title="Billboards on premises">BB</th><th>Register</th><th>HQ owner</th><th>Last follow-up</th><th>A0 posters</th><th>Billboard update</th><th>TV content</th><th>N-Line vehicle</th><th>Proofs</th>
  </tr></thead><tbody id="rows"></tbody></table></div>
