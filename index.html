@@ -174,7 +174,7 @@ dialog::backdrop{background:#000000b3;backdrop-filter:blur(3px)}
   <label style="display:flex;gap:6px;align-items:center;font-size:14px"><input type="checkbox" id="fod" style="min-height:20px;width:20px"> No follow-up in 14+ days</label>
  </div>
  <datalist id="ownlist"></datalist>
- <div class="hleg"><span style="color:var(--ink)">Each cell turns <b style="color:#8fe0b4">green</b> when done, <b style="color:#f0cc85">amber</b> while pending and <b style="color:#f6b5ab">red</b> when the follow-up has stalled. The dealer stripe:</span><span><i style="background:#34c27a"></i>Green: all items aligned</span><span><i style="background:#d9a441"></i>Amber: briefed, some items open</span><span><i style="background:#df6150"></i>Red: outstanding, no follow-up in 14+ days</span><span><i style="background:#3a3f47"></i>Plain: not started</span></div>
+ <div class="hleg"><span><i style="background:#34c27a"></i>All items aligned</span><span><i style="background:#d9a441"></i>Briefed, some items open</span><span><i style="background:#df6150"></i>Outstanding, no follow-up in 14+ days</span><span><i style="background:#3a3f47"></i>Not started</span></div>
  <p class="rohint note" style="margin:0 0 10px">Your changes save on this device. Click <b>🔑 Connect to edit</b> at the top to share them with the team and to upload proofs.</p>
  <div class="scroll"><table id="tbl"><colgroup id="cg"></colgroup><thead><tr>
   <th>Dealer</th><th>Region</th><th class="n" title="TV / digital screens (edit the count)">TV</th><th class="n" title="A0 clip-on poster frames (edit the count)">A0</th><th class="n" title="N-Line branded display spaces (edit the count)">NL</th><th>Register</th><th>HQ owner</th><th>Last follow-up</th><th>A0 posters</th><th>Billboard</th><th>TV content</th><th>N-Line vehicle</th><th>Proofs</th>
@@ -327,7 +327,7 @@ function filters(){
  $('#fr').innerHTML='<option value="">All regions</option>'+regs.map(r=>`<option${r===F.r?' selected':''}>${esc(r)}</option>`).join('');
  $('#fs').innerHTML='<option value="">Any register status</option>'+REG.map(r=>`<option${r===F.s?' selected':''}>${r}</option>`).join('');
  $('#fo').innerHTML='<option value="">Any owner</option>'+owners().map(r=>`<option${r===F.o?' selected':''}>${esc(r)}</option>`).join('');
- $('#fh').innerHTML=[['','Any dealer status'],['g','Green: all aligned'],['a','Amber: in progress'],['r','Red: outstanding'],['none','Not started']].map(([v,l])=>`<option value="${v}"${v===F.h?' selected':''}>${l}</option>`).join('');
+ $('#fh').innerHTML=[['','Any dealer status'],['g','All items aligned'],['a','Briefed, some items open'],['r','Outstanding, 14+ days'],['none','Not started']].map(([v,l])=>`<option value="${v}"${v===F.h?' selected':''}>${l}</option>`).join('');
  $('#q').value=F.q;$('#fod').checked=F.od;$('#deadline').value=S.settings.deadline;
 }
 function all(){summary();filters();list();wall()}
