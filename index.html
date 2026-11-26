@@ -76,7 +76,7 @@ td:nth-child(-n+2),th:nth-child(-n+2){position:sticky;left:0;background:var(--ca
 td:nth-child(2),th:nth-child(2){left:var(--c0,150px);box-shadow:inset -1px 0 0 var(--g1),6px 0 8px -6px #000}
 tbody tr:hover td:nth-child(-n+2){background:var(--card2)}
 [data-lab]{border-radius:4px}body.editing [data-lab]{outline:1px dashed var(--g2);outline-offset:2px;cursor:text;padding:0 2px}body.editing [data-lab]:focus{outline:1px solid var(--acc);color:var(--ink)}
-body.ro #rows select,body.ro #rows input{pointer-events:none}body.ro #add,body.ro #eh,body.ro #drop,body.ro #vdel,body.ro #ok,body.ro #del,body.ro .logadd{display:none!important}
+body.ro #rows select,body.ro #rows input{cursor:pointer;opacity:.8}body.ro .rohint{display:block}body.ro #add,body.ro #eh,body.ro #drop,body.ro #vdel,body.ro #ok,body.ro #del,body.ro .logadd{display:none!important}
 #eh.on{border-color:var(--acc);color:var(--acc)}
 td select,td input{min-height:34px;font-size:13.5px;padding:0 6px;background:transparent}
 td select{padding-right:4px}
@@ -164,6 +164,7 @@ dialog::backdrop{background:#000000b3;backdrop-filter:blur(3px)}
   <button type="button" id="eh" title="Rename column and section headings">Edit headings</button>
   <label style="display:flex;gap:6px;align-items:center;font-size:14px"><input type="checkbox" id="fod" style="min-height:20px;width:20px"> No follow-up in 14+ days</label>
  </div>
+ <p class="rohint note" style="display:none;margin:0 0 10px">View only. Click <b>🔑 Connect to edit</b> at the top to change statuses, dates and owners, or to upload proofs.</p>
  <div class="scroll"><table id="tbl"><colgroup id="cg"></colgroup><thead><tr>
   <th>Dealer</th><th>Region</th><th class="n" title="TV / digital screens">TV</th><th class="n" title="A0 clip-on poster frames">A0</th><th class="n" title="N-Line branded display spaces">NL</th><th class="n" title="Billboards on premises">BB</th><th>Register</th><th>HQ owner</th><th>Last follow-up</th><th>A0 posters</th><th>Billboard update</th><th>TV content</th><th>N-Line vehicle</th><th>Proofs</th>
  </tr></thead><tbody id="rows"></tbody></table></div>
@@ -187,7 +188,7 @@ dialog::backdrop{background:#000000b3;backdrop-filter:blur(3px)}
 <dialog id="kd"><form id="kf">
  <div class="dh"><h2>Connect to edit</h2><p>Anyone with the link can view. To save changes and upload proofs, add a GitHub access key. It stays on this device only.</p></div>
  <div class="form">
-  <label class="full">Your name (shown on saves)<input name="name" autocomplete="name" required></label>
+  <label class="full">Your name (shown on saves)<input name="uname" autocomplete="name" required></label>
   <label class="full">GitHub fine-grained token (Contents: read and write, this repo only)<input name="token" type="password" autocomplete="off" required></label>
   <p class="note full" id="kmsg" style="margin:0"></p>
  </div>
@@ -331,6 +332,8 @@ $('#rows').addEventListener('change',e=>{const el=e.target,f=el.dataset.f;if(!f)
  if(f==='reg'&&['Contacted','Awaiting reply','Confirmed'].includes(el.value))d.lastContact=today();
  d.log.unshift({d:today(),t:`${({reg:'Register',poster:'A0 posters',billboard:'Billboard',owner:'Owner',lastContact:'Followed up',bb:'Billboards',screensSt:'TV content',nlineSt:'N-Line vehicle'})[f]} → ${el.value||'cleared'}`});
  tr.outerHTML=row(d);summary();touch()});
+$('#rows').addEventListener('mousedown',e=>{if(canEdit()||!e.target.closest('select,input'))return;e.preventDefault();e.target.blur();if(!GH){toast('Open the GitHub Pages link to edit');return}toast('Connect your access key to edit');$('#key').click()});
+$('#rows').addEventListener('keydown',e=>{if(!canEdit()&&e.target.closest('select,input')&&!['Tab','Shift'].includes(e.key)){e.preventDefault();$('#key').click()}});
 $('#rows').addEventListener('click',e=>{const tr=e.target.closest('tr');if(!tr)return;if(e.target.closest('[data-open]'))openD(tr.dataset.id);if(e.target.closest('[data-pv]'))openV(tr.dataset.id)});
 $('#regions').addEventListener('click',e=>{const r=e.target.closest('.reg');if(!r)return;F.r=F.r===r.dataset.r?'':r.dataset.r;saveF();filters();list();$('#tbl').scrollIntoView({behavior:'smooth'})});
 [['#q','q','input'],['#fr','r','change'],['#fs','s','change'],['#fo','o','change']].forEach(([s,k,ev])=>$(s).addEventListener(ev,e=>{F[k]=e.target.value;saveF();list()}));
@@ -371,10 +374,10 @@ $('#df').addEventListener('submit',e=>{e.preventDefault();const fd=new FormData(
 $('#del').addEventListener('click',()=>{if(!delArm){delArm=true;$('#del').textContent='Click again to delete';return}
  S.dealers=S.dealers.filter(d=>d!==cur);pending=true;closeD();all();toast('Dealer removed')});
 $('#add').addEventListener('click',()=>openD(null));
-$('#key').addEventListener('click',()=>{if(!GH){toast('Open the GitHub Pages link to connect');return}const f=$('#kf');f.name.value=KEY&&KEY.name||'';f.token.value='';$('#kmsg').textContent=canEdit()?'This device is connected. Enter a new key to replace it.':'';$('#kout').style.display=canEdit()?'':'none';$('#kd').showModal()});
+$('#key').addEventListener('click',()=>{if(!GH){toast('Open the GitHub Pages link to connect');return}const f=$('#kf');f.elements.uname.value=KEY&&KEY.name||'';f.elements.token.value='';$('#kmsg').textContent=canEdit()?'This device is connected. Enter a new key to replace it.':'';$('#kout').style.display=canEdit()?'':'none';$('#kd').showModal()});
 $('#kc').addEventListener('click',()=>$('#kd').close());
 $('#kout').addEventListener('click',()=>{KEY=null;try{localStorage.removeItem('dbat-gh')}catch(e){}$('#kd').close();applyRO();list();st('View only · 🔑 Connect to edit')});
-$('#kf').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,k={name:f.name.value.trim(),token:f.token.value.trim()};$('#kmsg').textContent='Checking key…';
+$('#kf').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,k={name:f.elements.uname.value.trim(),token:f.elements.token.value.trim()};$('#kmsg').textContent='Checking key…';
  try{const r=await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}`,{headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+k.token},cache:'no-store'});
   if(!r.ok)throw 0;const j=await r.json();if(!(j.permissions&&j.permissions.push)){$('#kmsg').textContent='That key can read but not write. Give it Contents: read and write on this repo.';return}
   KEY=k;try{localStorage.setItem('dbat-gh',JSON.stringify(k))}catch(x){}$('#kd').close();applyRO();list();
