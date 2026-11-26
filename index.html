@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dealer Brand Asset Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js" defer></script>
+<style>
+/* VOICE: quiet operations console — sleek, dark, monotone; data first, nothing shouts.
+   IDEA: the dealer-floor rollout board as a premium control-room screen, one row per showroom.
+   PICTURE: thin graphite progress strips that light up in Hyundai sky blue as dealers go live, beside a top-right countdown.
+   COLOUR and TYPE: near-black #111214 ground, grey ramp for in-progress states, single accent #3d8bfd, soft red only for wrong vehicle; Inter, tracked small-caps labels.
+   LAYOUT: slim header (title left, countdown right), KPI strip, region + rollout panels, proof wall, then the register. */
+:root{color-scheme:dark;--bg:#111214;--card:#16171a;--card2:#1c1e22;--ink:#ececee;--mut:#8d929a;--line:#26282d;--acc:#3d8bfd;--bad:#df6150;--warn:#c9a25a;--g1:#343941;--g2:#5c636d;--g3:#8b939e;--g4:#bfc6cf}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif;overflow-x:clip;-webkit-font-smoothing:antialiased}
+.band{padding:clamp(18px,2.6vw,32px) max(4vw,16px)}
+.wrap{max-width:1320px;margin:0 auto}
+header{border-bottom:1px solid var(--line)}
+.hgrid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:start}
+h1{font-size:clamp(22px,2.4vw,28px);line-height:1.15;margin:0 0 6px;font-weight:600;letter-spacing:-.01em;text-wrap:balance}
+.brand{font-weight:700;font-size:17px;margin:0 0 14px}.brand span{display:block;font-size:11px;font-weight:500;color:var(--mut);letter-spacing:.08em}
+.sub{color:var(--mut);margin:0;max-width:66ch;font-size:15px}
+.donuts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:20px}
+.dn{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;grid-template-columns:92px minmax(0,1fr);gap:14px;align-items:center}
+.dn h3{grid-column:1/-1;margin:0;font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.1em}
+.ring{position:relative;width:92px;height:92px}.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring div{position:absolute;inset:0;display:grid;place-content:center;text-align:center;line-height:1.05}.ring b{font-size:21px;font-weight:600;font-variant-numeric:tabular-nums}.ring small{font-size:11px;color:var(--mut)}
+.dl{list-style:none;margin:0;padding:0;font-size:12.5px;color:var(--mut)}.dl li{display:flex;align-items:center;gap:6px;padding:2px 0}.dl i{flex:none;width:8px;height:8px;border-radius:99px}.dl span{flex:1}.dl em{font-style:normal;color:var(--ink);font-variant-numeric:tabular-nums}
+.dnote{grid-column:1/-1;font-size:12px;color:var(--mut);margin:0}
+@media(prefers-reduced-motion:no-preference){.ring circle{transition:stroke-dasharray .6s ease,stroke-dashoffset .6s ease}}
+.count{text-align:right;padding:10px 18px;white-space:nowrap;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.count b{display:block;font-size:clamp(38px,4.6vw,54px);line-height:1;font-weight:300;color:var(--acc);font-variant-numeric:tabular-nums}
+.count span{color:var(--mut);font-size:13px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;align-items:center}
+button,.btn{font:inherit;font-size:14px;min-height:40px;padding:0 14px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;transition:border-color .15s,background .15s}
+button:hover{border-color:var(--g2)}button:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.pri{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}.pri:hover{border-color:var(--acc);filter:brightness(1.08)}
+.dlset{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mut)}.dlset input{min-height:40px}
+.save{font-size:13px;color:var(--mut);margin-left:auto}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.kpi{background:var(--card);padding:14px 16px}
+.kpi b{display:block;font-size:26px;font-weight:500;line-height:1.15;font-variant-numeric:tabular-nums}.kpi span{color:var(--mut);font-size:13px}
+.two{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+h2{font-size:11.5px;margin:0 0 14px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.1em}
+.reg{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:12px;align-items:center;padding:9px 0;border-top:1px solid var(--line);cursor:pointer}
+.reg:first-of-type{border-top:0}.reg:hover b{color:var(--acc)}.reg b{font-weight:500;font-size:14px}.reg small{color:var(--mut);font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--g1);gap:1px}.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--mut);margin-top:14px}.legend i{display:inline-block;width:8px;height:8px;border-radius:99px;margin-right:6px}
+.mini{display:grid;grid-template-columns:110px minmax(0,1fr) 48px;gap:12px;align-items:center;font-size:14px;padding:9px 0;border-top:1px solid var(--line)}.mini:first-child{border-top:0}
+.mini small{color:var(--mut);text-align:right;font-variant-numeric:tabular-nums}
+.empty{color:var(--mut);font-size:14px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0 12px;align-items:center}
+input,select,textarea{font:inherit;font-size:15px;min-height:40px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--card2);color:var(--ink)}
+textarea{padding:10px;min-height:80px;width:100%}
+#q{flex:1 1 220px}
+.scroll{overflow:auto;max-height:78vh;background:var(--card);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:14px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:normal;overflow-wrap:anywhere;vertical-align:middle;line-height:1.3}
+th{position:relative}
+.rz{position:absolute;top:0;right:-4px;width:9px;height:100%;cursor:col-resize;z-index:4;touch-action:none;outline:none}
+.rz::after{content:'';position:absolute;top:22%;bottom:22%;left:4px;width:1px;background:var(--line)}
+.rz:hover::after,.rz:focus-visible::after,.rz.on::after{background:var(--acc);width:2px;top:0;bottom:0}
+body.resizing{cursor:col-resize;user-select:none}
+td select,td input{width:100%}
+th{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);background:var(--card);position:sticky;top:0;z-index:1}
+tbody tr:hover td{background:var(--card2)}
+td.n,th.n{text-align:center;font-variant-numeric:tabular-nums;padding-inline:6px}
+td.n input{max-width:64px;text-align:center}
+.pf.has{border-color:#2a5aa8;color:#8cb8ff}
+td:nth-child(-n+2),th:nth-child(-n+2){position:sticky;left:0;background:var(--card);z-index:2}th:nth-child(-n+2){z-index:3}
+td:nth-child(2),th:nth-child(2){left:var(--c0,150px);box-shadow:inset -1px 0 0 var(--g1),6px 0 8px -6px #000}
+tbody tr:hover td:nth-child(-n+2){background:var(--card2)}
+[data-lab]{border-radius:4px}body.editing [data-lab]{outline:1px dashed var(--g2);outline-offset:2px;cursor:text;padding:0 2px}body.editing [data-lab]:focus{outline:1px solid var(--acc);color:var(--ink)}
+body.ro #rows select,body.ro #rows input{pointer-events:none}body.ro #add,body.ro #eh,body.ro #drop,body.ro #vdel,body.ro #ok,body.ro #del,body.ro .logadd{display:none!important}
+#eh.on{border-color:var(--acc);color:var(--acc)}
+td select,td input{min-height:34px;font-size:13.5px;padding:0 6px;background:transparent}
+td select{padding-right:4px}
+.bn{font-weight:500;background:none;border:0;padding:0;min-height:34px;color:var(--ink);text-align:left}.bn:hover{color:var(--acc)}
+.s-ok{border-color:#2a5aa8!important;color:#8cb8ff!important}.s-mid{border-color:var(--g2)!important}.s-bad{border-color:var(--bad)!important;color:#f2a397!important}
+.od{color:var(--warn);font-weight:600}
+dialog{border:1px solid var(--line);border-radius:14px;padding:0;width:min(760px,96vw);max-height:92vh;background:var(--card);color:var(--ink)}
+dialog::backdrop{background:#000000b3;backdrop-filter:blur(3px)}
+.dh{padding:18px 20px;border-bottom:1px solid var(--line)}.dh h2{margin:0;font-size:20px;color:var(--ink)}.dh p{margin:4px 0 0;color:var(--mut);font-size:13px}
+.form{padding:18px 20px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}
+.form label{display:grid;gap:4px;font-size:12.5px;color:var(--mut)}.form .full{grid-column:1/-1}
+.form h3{grid-column:1/-1;margin:12px 0 0;font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.1em}
+.log{grid-column:1/-1}.log ul{margin:6px 0 0;padding:0;list-style:none;max-height:180px;overflow:auto}.log li{font-size:14px;padding:6px 0;border-top:1px solid var(--line)}.log li b{color:var(--mut);font-weight:500;margin-right:8px}
+.logadd{display:flex;gap:8px}.logadd input{flex:1}
+.df{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;padding:14px 20px;border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--card)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);color:var(--ink);padding:11px 16px;border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;font-size:14px}.toast.on{opacity:1}
+.note{font-size:13px;color:var(--mut);margin-top:10px}
+.pf{min-height:32px;font-size:13px;padding:0 12px}
+.ptiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:6px}
+.ptile{display:grid;gap:6px;padding:8px;border-radius:10px;text-align:left;height:auto;background:var(--card2)}
+.ptile .th,.wall .th{aspect-ratio:4/3;border-radius:7px;background:var(--g1);display:grid;place-items:center;overflow:hidden;color:var(--mut);font-size:12.5px}
+.th img,.th video{width:100%;height:100%;object-fit:cover;display:block}
+.ptile b{font-size:13.5px;font-weight:500}.ptile small{color:var(--mut);font-size:12.5px}
+#vw{width:min(980px,96vw)}
+.vtabs{display:flex;flex-wrap:wrap;gap:8px;padding:14px 20px 0}.vtabs button{min-height:36px;font-size:13px}.vtabs .on,.chips .on{border-color:var(--acc);color:var(--acc)}
+.vstage{margin:14px 20px 0;border-radius:10px;background:#07080a;min-height:300px;max-height:58vh;display:grid;place-items:center;overflow:hidden;color:var(--mut)}
+.vstage img,.vstage video{max-width:100%;max-height:58vh;display:block}.vstage a{color:var(--acc)}
+.vcap{padding:10px 20px 0;font-size:13.5px;color:var(--mut)}.vcap b{color:var(--ink);font-weight:500}
+.vthumbs{display:flex;gap:8px;overflow-x:auto;padding:10px 20px}.vthumbs button{flex:none;width:84px;height:62px;padding:0;overflow:hidden;border-radius:7px}.vthumbs .on{outline:2px solid var(--acc)}
+.vthumbs img,.vthumbs video{width:100%;height:100%;object-fit:cover}
+.drop{margin:0 20px 14px;border:1px dashed var(--g2);border-radius:10px;padding:14px;text-align:center;color:var(--mut);font-size:14px}.drop.hot{border-color:var(--acc);color:var(--acc)}
+.drop label{display:inline-flex;align-items:center;min-height:38px;padding:0 14px;border-radius:9px;border:1px solid var(--line);cursor:pointer;color:var(--ink);margin-left:8px;background:var(--card2)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.chips button{min-height:34px;font-size:13px}
+.wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}.wall button{display:grid;gap:6px;padding:6px;height:auto;text-align:left;border-radius:10px;background:var(--card2)}.wall small{font-size:12.5px;color:var(--mut);line-height:1.35}.wall small b{color:var(--ink);font-weight:500}
+@media(max-width:860px){.two{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.hgrid{grid-template-columns:minmax(0,1fr)}.count{text-align:left}.form{grid-template-columns:minmax(0,1fr)}.ptiles{grid-template-columns:repeat(2,minmax(0,1fr))}.reg{grid-template-columns:90px minmax(0,1fr)}.reg small{grid-column:2}.save{margin-left:0;width:100%}}
+@media(prefers-reduced-motion:no-preference){.bar i{transition:width .5s ease}}
+</style>
+</head>
+<body>
+<header class="band"><div class="wrap">
+ <div class="hgrid">
+  <div>
+   <p class="brand">Hyundai Dealer Assets<span>ROLLOUT 2026–27 · “PROGRESS. DRIVEN BY HYUNDAI” KV</span></p>
+   <h1 id="headline">Dealer brand assets</h1>
+  </div>
+  <div class="count"><b id="days">–</b><span id="dlabel">days to rollout deadline</span></div>
+ </div>
+ <div class="donuts" id="donuts"></div>
+ <div class="actions">
+  <button class="pri" id="xl" type="button">Download Excel</button>
+  <button id="add" type="button">Add dealer</button>
+  <button id="pw" type="button">Proof preview</button>
+  <button id="key" type="button">🔑 Connect to edit</button>
+  <label class="dlset">Deadline <input type="date" id="deadline"></label>
+  <span class="save" id="save">Loading…</span>
+ </div>
+</div></header>
+
+<main class="band"><div class="wrap">
+ <div class="two">
+  <section class="panel">
+   <h2><span data-lab="h-region">Register confirmation by region</span></h2>
+   <div id="regions"></div>
+   <div class="legend" id="legend"></div>
+  </section>
+  <section class="panel">
+   <h2><span data-lab="h-roll">Rollout progress</span></h2>
+   <div id="roll"></div>
+  </section>
+ </div>
+
+ <section class="panel" style="margin-top:16px" id="proofwall">
+  <h2><span data-lab="h-proof">Proof of execution</span> <span id="pcount"></span></h2>
+  <div class="chips" id="chips"></div>
+  <div class="wall" id="wall"></div>
+ </section>
+
+ <div class="filters">
+  <input id="q" type="search" placeholder="Search dealer, contact or note" aria-label="Search">
+  <select id="fr" aria-label="Region"></select>
+  <select id="fs" aria-label="Register status"></select>
+  <select id="fo" aria-label="HQ owner"></select>
+  <button type="button" id="rcw" title="Put every column back to its default width">Reset columns</button>
+  <button type="button" id="eh" title="Rename column and section headings">Edit headings</button>
+  <label style="display:flex;gap:6px;align-items:center;font-size:14px"><input type="checkbox" id="fod" style="min-height:20px;width:20px"> No follow-up in 14+ days</label>
+ </div>
+ <div class="scroll"><table id="tbl"><colgroup id="cg"></colgroup><thead><tr>
+  <th>Dealer</th><th>Region</th><th class="n" title="TV / digital screens">TV</th><th class="n" title="A0 clip-on poster frames">A0</th><th class="n" title="N-Line branded display spaces">NL</th><th class="n" title="Billboards on premises">BB</th><th>Register</th><th>HQ owner</th><th>Last follow-up</th><th>A0 posters</th><th>Billboard update</th><th>TV content</th><th>N-Line vehicle</th><th>Proofs</th>
+ </tr></thead><tbody id="rows"></tbody></table></div>
+ <p class="note" id="foot"></p>
+</div></main>
+
+<dialog id="dlg"><form method="dialog" id="df">
+ <div class="dh"><h2 id="dt">Dealer</h2><p id="dsub"></p></div>
+ <div class="form" id="fields"></div>
+ <div class="df"><span style="display:flex;gap:10px"><button type="button" id="del">Delete dealer</button><button type="button" id="dpv">Preview proofs</button></span><span style="display:flex;gap:10px"><button type="button" id="cancel">Cancel</button><button class="pri" type="submit" id="ok">Save</button></span></div>
+</form></dialog>
+<dialog id="vw">
+ <div class="dh"><h2 id="vt">Proofs</h2><p id="vs"></p></div>
+ <div class="vtabs" id="vtabs"></div>
+ <div class="vstage" id="vstage"></div>
+ <div class="vcap" id="vcap"></div>
+ <div class="vthumbs" id="vthumbs"></div>
+ <div class="drop" id="drop"><span id="dmsg">Drop photos or a short video here</span><label>Choose files<input type="file" id="vf" multiple accept="image/*,video/mp4,video/webm,application/pdf" hidden></label></div>
+ <div class="df"><button type="button" id="vdel">Delete this proof</button><span style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" id="vprev" aria-label="Previous">‹ Prev</button><button type="button" id="vnext" aria-label="Next">Next ›</button><button class="pri" type="button" id="vclose">Done</button></span></div>
+</dialog>
+<dialog id="kd"><form id="kf">
+ <div class="dh"><h2>Connect to edit</h2><p>Anyone with the link can view. To save changes and upload proofs, add a GitHub access key. It stays on this device only.</p></div>
+ <div class="form">
+  <label class="full">Your name (shown on saves)<input name="name" autocomplete="name" required></label>
+  <label class="full">GitHub fine-grained token (Contents: read and write, this repo only)<input name="token" type="password" autocomplete="off" required></label>
+  <p class="note full" id="kmsg" style="margin:0"></p>
+ </div>
+ <div class="df"><button type="button" id="kout">Disconnect this device</button><span style="display:flex;gap:10px"><button type="button" id="kc">Cancel</button><button class="pri" type="submit">Connect</button></span></div>
+</form></dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script id="state" type="application/json">{"v":1,"settings":{"deadline":"2027-01-31"},"dealers":[{"id":"d01","region":"Region","branch":"Branch Name","screens":null,"a0":"No. of A0 clip-on poster frames","nline":"No. of N-Line branded display spaces","bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"Source file had a broken formula for screens - confirm count with dealer.","log":[]},{"id":"d02","region":"Gauteng East","branch":"Hyundai Benoni","screens":1,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d03","region":"Gauteng East","branch":"Hyundai Airport","screens":0,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d04","region":"Gauteng East","branch":"Hyundai Boksburg","screens":0,"a0":6,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d05","region":"Gauteng East","branch":"Hyundai East Rand","screens":1,"a0":12,"nline":1,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d06","region":"Gauteng East","branch":"Hyundai Meadowdale","screens":1,"a0":11,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d07","region":"Gauteng East","branch":"Hyundai Sandton","screens":2,"a0":7,"nline":1,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d08","region":"Gauteng East","branch":"Hyundai Sandton Central","screens":0,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d09","region":"Gauteng East","branch":"Hyundai Woodmead","screens":0,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d10","region":"Gauteng East","branch":"Hyundai Bedfordview","screens":1,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d11","region":"Gauteng East","branch":"Hyundai Alberton","screens":0,"a0":6,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d12","region":"Gauteng East","branch":"Hyundai Germiston","screens":2,"a0":4,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d13","region":"Gauteng North","branch":"Hyundai Centurion","screens":1,"a0":0,"nline":1,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d14","region":"Gauteng North","branch":"Hyundai Hatfield","screens":1,"a0":12,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d15","region":"Gauteng North","branch":"Hyundai Silverlakes","screens":1,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d16","region":"Gauteng North","branch":"Hyundai Wonderboom","screens":1,"a0":0,"nline":1,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d17","region":"Gauteng North","branch":"Hyundai Zambezi","screens":1,"a0":4,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d18","region":"Gauteng West","branch":"Hyundai The Glen","screens":2,"a0":4,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d19","region":"Gauteng West","branch":"Hyundai Roodepoort","screens":0,"a0":4,"nline":1,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d20","region":"Gauteng West","branch":"Hyundai Weltevredenpark","screens":1,"a0":4,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d21","region":"Gauteng West","branch":"Hyundai Midrand","screens":1,"a0":4,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d22","region":"Gauteng West","branch":"Hyundai Northcliff","screens":1,"a0":0,"nline":1,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d23","region":"Gauteng West","branch":"Hyundai Bryanston","screens":2,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d24","region":"Gauteng West","branch":"Hyundai Fourways","screens":2,"a0":4,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d25","region":"Gauteng West","branch":"Hyundai Strijdom Park","screens":1,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d26","region":"KZN","branch":"Hyundai Pietermaritzburg","screens":1,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d27","region":"KZN","branch":"Hyundai Umhlanga","screens":3,"a0":17,"nline":1,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d28","region":"KZN","branch":"Hyundai Ethekwini","screens":1,"a0":14,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d29","region":"KZN","branch":"Hyundai West","screens":1,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d30","region":"KZN","branch":"Hyundai Hillcrest","screens":1,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d31","region":"KZN","branch":"Hyundai Pinetown","screens":2,"a0":17,"nline":1,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d32","region":"KZN","branch":"Hyundai Springfield","screens":0,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d33","region":"KZN","branch":"Hyundai Durban Central","screens":2,"a0":7,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d34","region":"KZN","branch":"Hyundai Amanzimtoti","screens":2,"a0":3,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d35","region":"KZN","branch":"Hyundai Richards Bay","screens":0,"a0":1,"nline":1,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d36","region":"Western Cape","branch":"Hyundai Somerset West","screens":3,"a0":0,"nline":1,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d37","region":"Western Cape","branch":"Hyundai Plumstead","screens":1,"a0":12,"nline":1,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d38","region":"Western Cape","branch":"Hyundai Bellville","screens":2,"a0":0,"nline":1,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d39","region":"Western Cape","branch":"Hyundai N1 City","screens":1,"a0":0,"nline":1,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d40","region":"Western Cape","branch":"Hyundai Cape Town","screens":0,"a0":2,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d41","region":"Western Cape","branch":"Hyundai Foreshore","screens":1,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d42","region":"Western Cape","branch":"Hyundai Tygervalley","screens":0,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d43","region":"Western Cape","branch":"Hyundai Stellenbosch","screens":1,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d44","region":"Western Cape","branch":"Hyundai Milnerton","screens":0,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d45","region":"Western Cape","branch":"Hyundai Paarl","screens":null,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"Source file had a broken formula for screens - confirm count with dealer.","log":[]},{"id":"d46","region":"Western Cape","branch":"Hyundai Table View","screens":0,"a0":0,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]},{"id":"d47","region":"Western Cape","branch":"Hyundai Brackenfell","screens":1,"a0":3,"nline":0,"bb":null,"bbType":"","bbSize":"","owner":"","contact":"","phone":"","email":"","reg":"Not contacted","lastContact":"","followUp":"","screensSt":"Not set up","poster":"Not started","billboard":"Not started","posterCost":null,"bbCost":null,"otherCost":null,"notes":"","log":[]}],"updated":""}</script>
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const REG=['Not contacted','Contacted','Awaiting reply','Confirmed','Needs correction'];
+const REGC={'Not contacted':'#343941','Contacted':'#5c636d','Awaiting reply':'#8b939e','Confirmed':'#3d8bfd','Needs correction':'#df6150'};
+const DONE='Installed / live';
+const ROLL=['Not started','Artwork in design','Quoting','Approved','In production','Content sent','Downloaded',DONE,'N/A'];
+const ROLLC={'Not started':'#343941','Artwork in design':'#4a5059','Quoting':'#5c636d','Approved':'#737b86','In production':'#8b939e','Content sent':'#a5adb7','Downloaded':'#bfc6cf',[DONE]:'#3d8bfd','N/A':'#24282e'};
+const LIVE='Uploaded & live';
+const TV=['Not set up','Content sent','Downloaded',LIVE,'No screen'];
+const TVC={'Not set up':'#343941','Content sent':'#a5adb7','Downloaded':'#bfc6cf',[LIVE]:'#3d8bfd','No screen':'#24282e'};
+const NL=['Not checked','Correct vehicle','Wrong vehicle','Empty','No display'];
+const NLC={'Not checked':'#343941','Correct vehicle':'#3d8bfd','Wrong vehicle':'#df6150','Empty':'#8b939e','No display':'#24282e'};
+const KINDS=[['bb','Billboard'],['a0','A0 snapper frame'],['nl','N-Line display'],['tv','TV / digital screen']];
+const OWN=['','Mark','Joe','Namhla','Nontokozo'];
+const BBT=['','None on site','Pylon / totem','Wall-mounted static','Rooftop static','Freestanding static','LED digital'];
+let S=JSON.parse($('#state').textContent);
+let editMode=false;
+const lab=(k,def)=>((S.settings&&S.settings.labels)||{})[k]||def;
+function migrate(s){const map={Installed:DONE,Running:LIVE};for(const d of s.dealers){if(d.owner==='Aubrey')d.owner='';for(const f of['poster','billboard','screensSt'])if(map[d[f]])d[f]=map[d[f]];
+ d.nlineSt=d.nlineSt||'Not checked';d.proofs=d.proofs||[];for(const k of['nlineVeh','tvAd','a0Ad','bbAd'])d[k]=d[k]||''}return s}
+migrate(S);
+const today=()=>new Date().toISOString().slice(0,10);
+const R=n=>'R '+Math.round(n||0).toLocaleString('en-ZA');
+const ago=n=>new Date(Date.now()-n*864e5).toISOString().slice(0,10);
+const complete=d=>d.reg==='Confirmed'&&[DONE,'N/A'].includes(d.poster)&&[DONE,'N/A'].includes(d.billboard)&&[LIVE,'No screen'].includes(d.screensSt)&&['Correct vehicle','No display'].includes(d.nlineSt);
+const overdue=d=>!complete(d)&&(!d.lastContact||d.lastContact<ago(14));
+const cls=v=>['Confirmed',DONE,LIVE,'Correct vehicle'].includes(v)?'s-ok':['Needs correction','Wrong vehicle'].includes(v)?'s-bad':['Not contacted','Not started','Not set up','Not checked','N/A','No screen','No display'].includes(v)?'':'s-mid';
+const opts=(list,v)=>list.map(o=>`<option${o===v?' selected':''}>${esc(o)}</option>`).join('');
+const fmtD=s=>s?new Date(s+'T00:00').toLocaleDateString('en-ZA',{day:'numeric',month:'short'}):'';
+let F={q:'',r:'',s:'',o:'',od:false};
+try{Object.assign(F,JSON.parse(sessionStorage.getItem('dbat-f')||'{}'))}catch(e){}
+function saveF(){try{sessionStorage.setItem('dbat-f',JSON.stringify(F))}catch(e){}}
+
+function summary(){
+ const D=S.dealers,n=D.length,sum=k=>D.reduce((a,d)=>a+(+d[k]||0),0);
+ const conf=D.filter(d=>d.reg==='Confirmed').length,bbKnown=D.filter(d=>d.bb!=null&&d.bb!=='').length;
+ const dl=Math.ceil((new Date(S.settings.deadline+'T00:00')-new Date(today()+'T00:00'))/864e5);
+ $('#days').textContent=dl;$('#dlabel').textContent=(dl<0?'days past':'days to')+' deadline · '+new Date(S.settings.deadline+'T00:00').toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'});
+ $('#headline').textContent=`${conf} of ${n} dealer registers confirmed`;
+ const k=[[n,'Dealerships'],[conf+' / '+n,'Registers confirmed'],[sum('screens'),'TV / digital screens'],[sum('a0'),'A0 poster frames'],[sum('nline'),'N-Line display spaces'],[bbKnown?sum('bb'):'–',`Billboards (${bbKnown} dealers logged)`],[D.reduce((a,d)=>a+(d.proofs||[]).length,0),'Proofs uploaded']];
+ if($('#kpis'))$('#kpis').innerHTML=k.map(([b,s])=>`<div class="kpi"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join('');
+ const DN=[
+  ['Dealer registers','dealers',null,'reg',[['Confirmed','Confirmed','#3d8bfd'],['Awaiting reply','Awaiting reply','#8b939e'],['Contacted','Contacted','#5c636d'],['Needs correction','Needs correction','#df6150'],['Not contacted','Not contacted','#343941']]],
+  ['A0 snapper frames','frames','a0','poster',[['New content live',[DONE],'#3d8bfd'],['Content sent / downloaded',['Content sent','Downloaded'],'#bfc6cf'],['In progress',['Artwork in design','Quoting','Approved','In production'],'#737b86'],['Not started',['Not started'],'#343941'],['N/A',['N/A'],'#24282e']]],
+  ['Billboards','boards','bb','billboard',[['New content live',[DONE],'#3d8bfd'],['Content sent / downloaded',['Content sent','Downloaded'],'#bfc6cf'],['In progress',['Artwork in design','Quoting','Approved','In production'],'#737b86'],['Not started',['Not started'],'#343941'],['N/A',['N/A'],'#24282e']]],
+  ['TV / digital screens','screens','screens','screensSt',[['Uploaded & live',[LIVE],'#3d8bfd'],['Downloaded',['Downloaded'],'#bfc6cf'],['Content sent',['Content sent'],'#8b939e'],['Not set up',['Not set up'],'#343941'],['No screen',['No screen'],'#24282e']]],
+  ['N-Line stands','stands','nline','nlineSt',[['Right vehicle',['Correct vehicle'],'#3d8bfd'],['Wrong vehicle',['Wrong vehicle'],'#df6150'],['Empty',['Empty'],'#8b939e'],['Not checked',['Not checked'],'#343941']]]];
+ $('#donuts').innerHTML=DN.map(([title,unit,wf,sf,cats])=>{
+  const w=d=>wf?(+d[wf]||0):1,tot=D.reduce((a,d)=>a+w(d),0);
+  const vals=cats.map(([l,ss,c])=>[l,D.filter(d=>[].concat(ss).includes(d[sf])).reduce((a,d)=>a+w(d),0),c]);
+  const ok=vals[0][1],pct=tot?Math.round(ok/tot*100):0;let off=0;
+  const arcs=tot?vals.filter(v=>v[1]).map(([l,v,c])=>{const len=v/tot*100,s=`<circle cx="50" cy="50" r="40" fill="none" stroke="${c}" stroke-width="12" pathLength="100" stroke-dasharray="${Math.max(len-.6,.4)} ${100-Math.max(len-.6,.4)}" stroke-dashoffset="${-off}"><title>${esc(l)}: ${v}</title></circle>`;off+=len;return s}).join(''):'';
+  const unk=wf==='bb'?D.filter(d=>d.bb==null||d.bb==='').length:0;
+  return `<div class="dn"><h3 data-lab="dn-${esc(sf)}" data-def="${esc(title)}"${editMode?' contenteditable="true" spellcheck="false"':''}>${esc(lab('dn-'+sf,title))}</h3><div class="ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="none" stroke="#24282e" stroke-width="12"/>${arcs}</svg><div><b>${tot?pct+'%':'–'}</b><small>${ok} of ${tot}</small></div></div>
+  <ul class="dl">${vals.filter(v=>v[1]||v===vals[0]).map(([l,v,c])=>`<li><i style="background:${c}"></i><span>${esc(l)}</span><em>${v}</em></li>`).join('')}</ul>${unk?`<p class="dnote">${unk} dealers' billboard count not logged yet</p>`:''}</div>`}).join('');
+ const regs=[...new Set(D.map(d=>d.region))];
+ $('#regions').innerHTML=regs.map(r=>{const g=D.filter(d=>d.region===r),c=g.filter(d=>d.reg==='Confirmed').length;
+  return `<div class="reg" data-r="${esc(r)}" title="Filter to ${esc(r)}"><b>${esc(r)}</b><div class="bar">${REG.map(s=>{const x=g.filter(d=>d.reg===s).length;return x?`<i style="width:${x/g.length*100}%;background:${REGC[s]}" title="${esc(s)}: ${x}"></i>`:''}).join('')}</div><small>${c}/${g.length} confirmed · ${g.reduce((a,d)=>a+(+d.a0||0),0)} A0</small></div>`}).join('');
+ $('#legend').innerHTML=REG.map(s=>`<span><i style="background:${REGC[s]}"></i>${s}</span>`).join('');
+ const RW=[['A0 posters','poster',ROLL,ROLLC,DONE],['Billboards','billboard',ROLL,ROLLC,DONE],['TV content','screensSt',TV,TVC,LIVE],['N-Line vehicle','nlineSt',NL,NLC,'Correct vehicle']];
+ $('#roll').innerHTML=RW.map(([l,f,Ls,C,ok])=>{const done=D.filter(d=>d[f]===ok).length;
+  return `<div class="mini"><span>${l}</span><div class="bar">${Ls.map(s=>{const x=D.filter(d=>d[f]===s).length;return x?`<i style="width:${x/n*100}%;background:${C[s]}" title="${esc(s)}: ${x}"></i>`:''}).join('')}</div><small class="n" title="${esc(ok)}">${done}/${n}</small></div>`}).join('')+`<div class="legend"><span><i style="background:#343941"></i>Not started</span><span><i style="background:#737b86"></i>In progress</span><span><i style="background:#bfc6cf"></i>Content sent / downloaded</span><span><i style="background:#3d8bfd"></i>Live / correct vehicle</span><span><i style="background:#df6150"></i>Wrong vehicle</span></div>`;
+}
+
+function row(d){
+ const od=overdue(d);
+ return `<tr data-id="${esc(d.id)}"><td><button class="bn" data-open type="button">${esc(d.branch.replace(/^Hyundai /,''))}</button></td><td>${esc(d.region)}</td>
+ <td class="n">${d.screens==null?'<span class="od" title="Needs confirmation">?</span>':esc(d.screens)}</td><td class="n">${esc(d.a0)}</td><td class="n">${esc(d.nline)}</td>
+ <td class="n"><input type="number" min="0" data-f="bb" value="${esc(d.bb??'')}" placeholder="?" aria-label="Billboards"></td>
+ <td><select data-f="reg" class="${cls(d.reg)}">${opts(REG,d.reg)}</select></td>
+ <td><select data-f="owner">${opts(OWN,d.owner)}</select></td>
+ <td><input type="date" data-f="lastContact" value="${esc(d.lastContact)}" max="${today()}" class="${od?'s-mid':''}" title="${od?'No follow-up in 14+ days':''}"></td>
+ <td><select data-f="poster" class="${cls(d.poster)}">${opts(ROLL,d.poster)}</select></td>
+ <td><select data-f="billboard" class="${cls(d.billboard)}">${opts(ROLL,d.billboard)}</select></td>
+ <td><select data-f="screensSt" class="${cls(d.screensSt)}">${opts(TV,d.screensSt)}</select></td>
+ <td><select data-f="nlineSt" class="${cls(d.nlineSt)}">${opts(NL,d.nlineSt)}</select></td>
+ <td><button type="button" class="pf ${(d.proofs||[]).length?'has':''}" data-pv>${(d.proofs||[]).length?`Preview proofs (${(d.proofs||[]).length})`:'Add proof'}</button></td></tr>`;
+}
+function list(){
+ const q=F.q.toLowerCase();
+ const L=S.dealers.filter(d=>(!F.r||d.region===F.r)&&(!F.s||d.reg===F.s)&&(!F.o||d.owner===F.o)&&(!F.od||overdue(d))&&(!q||[d.branch,d.contact,d.notes,d.email].join(' ').toLowerCase().includes(q)));
+ $('#rows').innerHTML=L.length?L.map(row).join(''):'<tr><td colspan="14" class="empty">No dealers match these filters.</td></tr>';
+ $('#foot').textContent=`Showing ${L.length} of ${S.dealers.length} dealers. Drag the line at the edge of any column header to make it wider or narrower; text stacks to fit. Click a dealer name for contacts, billboard details, adverts showing, proofs and the engagement log.${S.updated?' Last saved '+new Date(S.updated).toLocaleString('en-ZA',{dateStyle:'medium',timeStyle:'short'})+'.':''}`;
+}
+function filters(){
+ const regs=[...new Set(S.dealers.map(d=>d.region))];
+ $('#fr').innerHTML='<option value="">All regions</option>'+regs.map(r=>`<option${r===F.r?' selected':''}>${esc(r)}</option>`).join('');
+ $('#fs').innerHTML='<option value="">Any register status</option>'+REG.map(r=>`<option${r===F.s?' selected':''}>${r}</option>`).join('');
+ $('#fo').innerHTML='<option value="">Any owner</option>'+OWN.filter(Boolean).map(r=>`<option${r===F.o?' selected':''}>${r}</option>`).join('');
+ $('#q').value=F.q;$('#fod').checked=F.od;$('#deadline').value=S.settings.deadline;
+}
+function all(){summary();filters();list();wall()}
+
+/* saving: the GitHub repo is the shared store (data/state.json + proofs/) */
+let timer=null,pending=false,dialogOpen=false,base=S.updated||'',gsha=null;
+const st=t=>$('#save').textContent=t;
+const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),3600)};
+const GH=(()=>{const h=location.hostname,seg=location.pathname.split('/').filter(Boolean);if(!/\.github\.io$/.test(h)||!seg.length)return null;
+ const dir=seg.slice(1).filter(x=>!/\.html?$/i.test(x));return{owner:h.split('.')[0],repo:seg[0],pre:dir.length?dir.join('/')+'/':''}})();
+let KEY=null;try{KEY=JSON.parse(localStorage.getItem('dbat-gh')||'null')}catch(e){}
+const canEdit=()=>!!(GH&&KEY&&KEY.token);
+const b64=s=>btoa(unescape(encodeURIComponent(s))),unb64=s=>decodeURIComponent(escape(atob(s.replace(/\s/g,''))));
+async function api(path,opt={},abs){const r=await fetch(abs||`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${path}`,{method:opt.method||'GET',body:opt.body,cache:'no-store',
+ headers:Object.assign({Accept:'application/vnd.github+json'},KEY&&KEY.token?{Authorization:'Bearer '+KEY.token}:{},opt.body?{'Content-Type':'application/json'}:{})});
+ if(!r.ok){const er=new Error('GitHub '+r.status);er.status=r.status;throw er}return r.status===204?null:r.json()}
+const DATA=()=>GH.pre+'data/state.json';
+function touch(){pending=true;if(!canEdit()){st(GH?'View only: connect your access key to save':'Preview: open the GitHub Pages link to save');return}st('Unsaved changes…');clearTimeout(timer);timer=setTimeout(save,1500)}
+async function save(){
+ if($('#dlg').open||$('#vw').open||!canEdit())return;
+ pending=false;st('Saving…');
+ try{
+  let remote=null;try{const j=await api(DATA());gsha=j.sha;remote=JSON.parse(unb64(j.content))}catch(er){if(er.status!==404)throw er;gsha=null}
+  if(remote&&(remote.updated||'')!==base){S=migrate(remote);base=remote.updated||'';all();st('Reloaded latest');toast(`${remote.updatedBy||'Someone'} saved changes first. Their version is now showing; please redo your last change.`);return}
+  S.updated=new Date().toISOString();S.updatedBy=KEY.name||'';
+  const j=await api(DATA(),{method:'PUT',body:JSON.stringify({message:`Tracker update by ${KEY.name||'editor'}`,content:b64(JSON.stringify(S,null,1)),sha:gsha||undefined})});
+  gsha=j.content.sha;base=S.updated;st('All changes saved to GitHub');list();
+ }catch(er){if(er.status===401||er.status===403){st('Access key rejected or read-only. Reconnect with 🔑')}else{st('Save failed, retrying…');timer=setTimeout(save,6000)}}
+}
+function applyRO(){const ro=!canEdit();document.body.classList.toggle('ro',ro);$('#key').textContent=canEdit()?`🔑 ${KEY.name||'Connected'}`:'🔑 Connect to edit'}
+(async()=>{applyRO();if(!GH){st('Preview: open the GitHub Pages link to save');return}
+ st('Loading latest…');
+ try{let r=null;if(canEdit()){const j=await api(DATA());gsha=j.sha;r=JSON.parse(unb64(j.content))}else{const x=await fetch('data/state.json?t='+Date.now(),{cache:'no-store'});if(x.ok)r=await x.json()}
+  if(r){S=migrate(r);base=r.updated||'';all()}}
+ catch(er){if(er.status===401)toast('Your access key was rejected. Reconnect with 🔑')}
+ st(canEdit()?(S.updated?'Up to date':'Connected'):'View only · 🔑 Connect to edit')})();
+
+
+/* table edits */
+$('#rows').addEventListener('change',e=>{const el=e.target,f=el.dataset.f;if(!f)return;if(!canEdit()){list();toast('Connect with 🔑 to make changes');return}const tr=el.closest('tr'),d=S.dealers.find(x=>x.id===tr.dataset.id);
+ d[f]=f==='bb'?(el.value===''?null:+el.value):el.value;
+ if(f==='reg'&&['Contacted','Awaiting reply','Confirmed'].includes(el.value))d.lastContact=today();
+ d.log.unshift({d:today(),t:`${({reg:'Register',poster:'A0 posters',billboard:'Billboard',owner:'Owner',lastContact:'Followed up',bb:'Billboards',screensSt:'TV content',nlineSt:'N-Line vehicle'})[f]} → ${el.value||'cleared'}`});
+ tr.outerHTML=row(d);summary();touch()});
+$('#rows').addEventListener('click',e=>{const tr=e.target.closest('tr');if(!tr)return;if(e.target.closest('[data-open]'))openD(tr.dataset.id);if(e.target.closest('[data-pv]'))openV(tr.dataset.id)});
+$('#regions').addEventListener('click',e=>{const r=e.target.closest('.reg');if(!r)return;F.r=F.r===r.dataset.r?'':r.dataset.r;saveF();filters();list();$('#tbl').scrollIntoView({behavior:'smooth'})});
+[['#q','q','input'],['#fr','r','change'],['#fs','s','change'],['#fo','o','change']].forEach(([s,k,ev])=>$(s).addEventListener(ev,e=>{F[k]=e.target.value;saveF();list()}));
+$('#fod').addEventListener('change',e=>{F.od=e.target.checked;saveF();list()});
+$('#deadline').addEventListener('change',e=>{if(e.target.value){S.settings.deadline=e.target.value;summary();touch()}});
+
+/* dialog */
+let cur=null,delArm=false;
+const FIELDS=[['h','Asset count'],['screens','TV / digital screens','num'],['a0','A0 clip-on frames','num'],['nline','N-Line display spaces','num'],['bb','Billboards on premises','num'],['bbType','Billboard type','sel',BBT],['bbSize','Billboard size (e.g. 6m x 3m)','txt'],
+ ['h','Engagement'],['owner','HQ owner','sel',OWN],['reg','Register status','sel',REG],['contact','Dealer contact person','txt'],['phone','Phone','txt'],['email','Email','txt'],['lastContact','Last follow-up','date'],
+ ['h','Rollout and content check'],['screensSt','TV / digital screens: content','sel',TV],['tvAd','Advert showing on screens','txt'],['poster','A0 snapper frames','sel',ROLL],['a0Ad','Advert / KV in A0 frames','txt'],['billboard','Billboard update','sel',ROLL],['bbAd','Advert on billboard','txt'],['nlineSt','N-Line display: right vehicle?','sel',NL],['nlineVeh','Vehicle on N-Line display','txt'],
+ ['h','Identity'],['branch','Dealer name','txt'],['region','Region','txt'],['notes','Notes','area']];
+function openD(id){
+ cur=id?S.dealers.find(d=>d.id===id):null;const d=cur||{region:F.r||'',branch:'',screens:0,a0:0,nline:0,bb:null,reg:'Not contacted',poster:'Not started',billboard:'Not started',screensSt:'Not set up',nlineSt:'Not checked',proofs:[],log:[]};
+ $('#dt').textContent=cur?d.branch:'New dealer';$('#dsub').textContent=cur?`${d.region} · ${(d.proofs||[]).length} proofs · last follow-up ${d.lastContact?fmtD(d.lastContact):'none yet'}`:'Add a dealership to the register';
+ $('#fields').innerHTML=FIELDS.map(([k,l,t,L])=>{if(k==='h')return`<h3>${l}</h3>`;const v=d[k]??'';
+  const inp=t==='sel'?`<select name="${k}">${opts(L,v)}</select>`:t==='area'?`<textarea name="${k}">${esc(v)}</textarea>`:`<input name="${k}" type="${t==='num'?'number':t==='date'?'date':'text'}" ${t==='num'?'min="0"':''} value="${esc(v)}">`;
+  return `<label class="${t==='area'?'full':''}">${l}${inp}</label>`}).join('')+
+  `<div class="log"><h3 style="margin:10px 0 6px;font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.1em">Engagement log</h3><div class="logadd"><input id="ln" placeholder="e.g. Called GM, billboard is a 2-sided pylon"><button type="button" id="la">Add</button></div><ul id="ll">${(d.log||[]).map(x=>`<li><b>${esc(fmtD(x.d))}</b>${esc(x.t)}</li>`).join('')||'<li class="empty">No activity yet.</li>'}</ul></div>`;
+ $('#fields').insertAdjacentHTML('beforeend',`<div class="log"><h3 style="margin:10px 0 0;font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.1em">Proof of execution</h3><div class="ptiles" id="ptiles"></div></div>`);
+ $('#fields')._log=[...(d.log||[])];ptiles(cur);
+ delArm=false;$('#del').textContent='Delete dealer';$('#del').style.display=cur?'':'none';$('#dpv').style.display=cur?'':'none';
+ $('#fields').querySelectorAll('input,select,textarea').forEach(x=>x.disabled=!canEdit());$('#dlg').showModal();
+}
+$('#fields').addEventListener('click',e=>{if(e.target.id!=='la')return;const i=$('#ln');if(!i.value.trim())return;$('#fields')._log.unshift({d:today(),t:i.value.trim()});
+ $('#ll').innerHTML=$('#fields')._log.map(x=>`<li><b>${esc(fmtD(x.d))}</b>${esc(x.t)}</li>`).join('');i.value=''});
+$('#fields').addEventListener('keydown',e=>{if(e.target.id==='ln'&&e.key==='Enter'){e.preventDefault();$('#la').click()}});
+function closeD(){dialogOpen=false;$('#dlg').close();if(pending)touch()}
+$('#cancel').addEventListener('click',closeD);
+$('#dlg').addEventListener('cancel',()=>{dialogOpen=false;if(pending)touch()});
+$('#df').addEventListener('submit',e=>{e.preventDefault();const fd=new FormData($('#df'));
+ const d=cur||{id:'d'+Date.now().toString(36),log:[],proofs:[]};
+ for(const[k,,t]of FIELDS){if(k==='h')continue;let v=fd.get(k);if(t==='num')v=v===''?(['screens','a0','nline'].includes(k)?0:null):+v;d[k]=v}
+ if(!d.branch.trim()){toast('Give the dealer a name first');return}
+ const pend=$('#ln').value.trim();if(pend)$('#fields')._log.unshift({d:today(),t:pend});
+ d.log=$('#fields')._log;if(!cur){S.dealers.push(d)}
+ pending=true;closeD();all();toast('Saved '+d.branch)});
+$('#del').addEventListener('click',()=>{if(!delArm){delArm=true;$('#del').textContent='Click again to delete';return}
+ S.dealers=S.dealers.filter(d=>d!==cur);pending=true;closeD();all();toast('Dealer removed')});
+$('#add').addEventListener('click',()=>openD(null));
+$('#key').addEventListener('click',()=>{if(!GH){toast('Open the GitHub Pages link to connect');return}const f=$('#kf');f.name.value=KEY&&KEY.name||'';f.token.value='';$('#kmsg').textContent=canEdit()?'This device is connected. Enter a new key to replace it.':'';$('#kout').style.display=canEdit()?'':'none';$('#kd').showModal()});
+$('#kc').addEventListener('click',()=>$('#kd').close());
+$('#kout').addEventListener('click',()=>{KEY=null;try{localStorage.removeItem('dbat-gh')}catch(e){}$('#kd').close();applyRO();list();st('View only · 🔑 Connect to edit')});
+$('#kf').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,k={name:f.name.value.trim(),token:f.token.value.trim()};$('#kmsg').textContent='Checking key…';
+ try{const r=await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}`,{headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+k.token},cache:'no-store'});
+  if(!r.ok)throw 0;const j=await r.json();if(!(j.permissions&&j.permissions.push)){$('#kmsg').textContent='That key can read but not write. Give it Contents: read and write on this repo.';return}
+  KEY=k;try{localStorage.setItem('dbat-gh',JSON.stringify(k))}catch(x){}$('#kd').close();applyRO();list();
+  const x=await api(DATA()).catch(()=>null);if(x){gsha=x.sha;const r2=JSON.parse(unb64(x.content));S=migrate(r2);base=r2.updated||'';all()}st('Connected · edits save to GitHub');toast('Connected. Your edits now save for everyone.')}
+ catch(x){$('#kmsg').textContent='GitHub rejected that key. Check it is correct and not expired.'}});
+/* resizable columns: drag the line at a header's right edge, or focus it and use the arrow keys */
+const COLW=[150,110,52,52,52,64,150,120,150,160,160,150,150,150];
+let CW=null;try{CW=JSON.parse(localStorage.getItem('dbat-cw')||'null')}catch(e){}
+if(!Array.isArray(CW)||CW.length!==COLW.length)CW=[...COLW];
+const saveW=()=>{try{localStorage.setItem('dbat-cw',JSON.stringify(CW))}catch(e){}};
+function applyW(){$('#cg').innerHTML=CW.map(w=>`<col style="width:${w}px">`).join('');$('#tbl').style.width=CW.reduce((a,b)=>a+b,0)+'px';$('#tbl').style.setProperty('--c0',CW[0]+'px')}
+document.querySelectorAll('#tbl thead th').forEach((th,i)=>{const s=document.createElement('span');s.dataset.lab='col-'+i;s.textContent=th.textContent;th.textContent='';th.appendChild(s);const h=document.createElement('span');h.className='rz';h.tabIndex=0;h.dataset.i=i;h.setAttribute('role','separator');h.setAttribute('aria-label','Resize '+th.textContent+' column');th.appendChild(h)});
+let drag=null;
+$('#tbl').addEventListener('pointerdown',e=>{const h=e.target.closest('.rz');if(!h)return;e.preventDefault();drag={i:+h.dataset.i,x:e.clientX,w:CW[+h.dataset.i],h};h.classList.add('on');document.body.classList.add('resizing');try{h.setPointerCapture(e.pointerId)}catch(x){}});
+window.addEventListener('pointermove',e=>{if(!drag)return;CW[drag.i]=Math.max(44,Math.min(520,Math.round(drag.w+e.clientX-drag.x)));applyW()});
+window.addEventListener('pointerup',()=>{if(!drag)return;drag.h.classList.remove('on');document.body.classList.remove('resizing');drag=null;saveW()});
+$('#tbl').addEventListener('dblclick',e=>{const h=e.target.closest('.rz');if(!h)return;CW[+h.dataset.i]=COLW[+h.dataset.i];applyW();saveW()});
+$('#tbl').addEventListener('keydown',e=>{const h=e.target.closest('.rz');if(!h||!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();const i=+h.dataset.i;CW[i]=Math.max(44,Math.min(520,CW[i]+(e.key==='ArrowRight'?12:-12)));applyW();saveW()});
+$('#rcw').addEventListener('click',()=>{CW=[...COLW];applyW();saveW();toast('Column widths reset')});
+applyW();
+/* editable headings: shared with everyone, saved with the tracker */
+document.querySelectorAll('[data-lab]').forEach(e=>{if(!e.dataset.def)e.dataset.def=e.textContent});
+function applyLabels(){document.querySelectorAll('[data-lab]').forEach(e=>{if(document.activeElement!==e)e.textContent=lab(e.dataset.lab,e.dataset.def)})}
+function setEdit(on){editMode=on;document.body.classList.toggle('editing',on);$('#eh').classList.toggle('on',on);$('#eh').textContent=on?'Done editing':'Edit headings';
+ document.querySelectorAll('[data-lab]').forEach(e=>{if(on){e.setAttribute('contenteditable','true');e.spellcheck=false}else e.removeAttribute('contenteditable')});
+ if(on)toast('Click any dashed heading to rename it. Clear it to restore the original.')}
+$('#eh').addEventListener('click',()=>{if(!canEdit()){toast('Connect with 🔑 to rename headings');return}setEdit(!editMode)});
+document.addEventListener('keydown',e=>{const el=e.target.closest&&e.target.closest('[data-lab][contenteditable]');if(!el)return;
+ if(e.key==='Enter'){e.preventDefault();el.blur()}if(e.key==='Escape'){el.textContent=lab(el.dataset.lab,el.dataset.def);el.blur()}});
+document.addEventListener('focusout',e=>{const el=e.target.closest&&e.target.closest('[data-lab][contenteditable]');if(!el)return;
+ const v=el.textContent.replace(/\s+/g,' ').trim().slice(0,80),k=el.dataset.lab,def=el.dataset.def;S.settings.labels=S.settings.labels||{};
+ const old=S.settings.labels[k]||def;if(!v||v===def)delete S.settings.labels[k];else S.settings.labels[k]=v;applyLabels();if((v||def)!==old)touch()});
+applyLabels();
+$('#pw').addEventListener('click',()=>{const has=S.dealers.find(d=>(d.proofs||[]).length);$('#proofwall').scrollIntoView({behavior:'smooth'});if(!has)toast('No proofs yet. Use Add proof on any dealer row to upload the first one.')});
+$('#dpv').addEventListener('click',()=>{if(cur)openV(cur.id)});
+
+/* proofs */
+const KN=Object.fromEntries(KINDS);
+const AD={tv:['screensSt','tvAd'],a0:['poster','a0Ad'],bb:['billboard','bbAd'],nl:['nlineSt','nlineVeh']};
+const LOCAL={};
+const rawU=p=>`https://raw.githubusercontent.com/${GH?GH.owner:''}/${GH?GH.repo:''}/HEAD/${GH?GH.pre:''}${p.id.split('/').map(encodeURIComponent).join('/')}`;
+const media=(p,big)=>{const u=LOCAL[p.id]||p.id.split('/').map(encodeURIComponent).join('/');return /^video\//.test(p.ct)?`<video src="${u}" ${big?'controls playsinline':'muted preload="metadata"'}></video>`:/pdf/.test(p.ct)?`<span>${big?`<a href="${u}" style="color:#8fd3ff">Open PDF: ${esc(p.name)}</a>`:'PDF'}</span>`:`<img src="${u}" alt="${esc(p.name)}" loading="lazy" data-raw="${esc(GH?rawU(p):'')}" onerror="if(this.dataset.raw&&this.src!==this.dataset.raw){this.src=this.dataset.raw}else{this.replaceWith(document.createTextNode('Image unavailable'))}">`};
+
+function ptiles(d){const el=$('#ptiles');if(!el)return;if(!d){el.innerHTML='<p class="empty" style="grid-column:1/-1">Save the dealer first, then add proofs.</p>';return}
+ el.innerHTML=KINDS.map(([k,l])=>{const P=d.proofs.filter(p=>p.k===k),last=P[P.length-1];return `<button type="button" class="ptile" data-k="${k}"><div class="th">${last?media(last):'No proof yet'}</div><b>${esc(l)}</b><small>${P.length?P.length+' proof'+(P.length>1?'s':'')+' · Preview':'Add proof'}</small></button>`}).join('')}
+$('#fields').addEventListener('click',e=>{const b=e.target.closest('.ptile');if(b&&cur)openV(cur.id,b.dataset.k)});
+let V={id:null,k:'bb',i:0},vdelArm=false,wk='';
+function openV(id,k,pid){const d=S.dealers.find(x=>x.id===id);if(!d)return;V.id=id;
+ V.k=k||(pid&&d.proofs.find(p=>p.id===pid)||{}).k||(KINDS.find(([x])=>d.proofs.some(p=>p.k===x))||['bb'])[0];
+ const P=d.proofs.filter(p=>p.k===V.k);V.i=pid?Math.max(0,P.findIndex(p=>p.id===pid)):Math.max(0,P.length-1);renderV();if(!$('#vw').open)$('#vw').showModal()}
+function renderV(){const d=S.dealers.find(x=>x.id===V.id);if(!d)return;const P=d.proofs.filter(p=>p.k===V.k);V.i=Math.min(V.i,Math.max(0,P.length-1));const p=P[V.i];
+ $('#vt').textContent=d.branch;$('#vs').textContent=`${d.region} · proof of execution`;
+ $('#vtabs').innerHTML=KINDS.map(([k,l])=>`<button type="button" data-k="${k}" class="${k===V.k?'on':''}">${esc(l)} (${d.proofs.filter(x=>x.k===k).length})</button>`).join('');
+ $('#vstage').innerHTML=p?media(p,true):`<span>No ${esc(KN[V.k].toLowerCase())} proof yet</span>`;
+ const [sf,af]=AD[V.k];
+ $('#vcap').innerHTML=`<b>${esc(KN[V.k])}:</b> ${esc(d[sf]||'')}${d[af]?` · <b>${V.k==='nl'?'Vehicle':'Advert'}:</b> ${esc(d[af])}`:''}${p?` · uploaded ${esc(fmtD(p.d))} · ${esc(p.name)} · ${V.i+1} of ${P.length}`:''}`;
+ $('#vthumbs').innerHTML=P.map((x,i)=>`<button type="button" data-i="${i}" class="${i===V.i?'on':''}" aria-label="Proof ${i+1}">${media(x)}</button>`).join('');
+ $('#drop').style.display=canEdit()?'':'none';$('#vdel').style.display=canEdit()&&p?'':'none';vdelArm=false;$('#vdel').textContent='Delete this proof';
+ $('#dmsg').textContent=`Drop ${KN[V.k]} photos or a short video here`;
+ $('#vprev').disabled=V.i<=0;$('#vnext').disabled=V.i>=P.length-1}
+$('#vtabs').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;V.k=b.dataset.k;V.i=1e9;renderV()});
+$('#vthumbs').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(b){V.i=+b.dataset.i;renderV()}});
+$('#vprev').addEventListener('click',()=>{V.i--;renderV()});$('#vnext').addEventListener('click',()=>{V.i++;renderV()});
+$('#vw').addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowLeft'&&!$('#vprev').disabled){V.i--;renderV()}if(e.key==='ArrowRight'&&!$('#vnext').disabled){V.i++;renderV()}});
+function closeV(){if($('#vw').open)$('#vw').close();afterV()}
+function afterV(){if($('#dlg').open)ptiles(cur);list();wall();if(pending)touch()}
+$('#vclose').addEventListener('click',closeV);$('#vw').addEventListener('close',afterV);
+function logTo(d,txt){const e={d:today(),t:txt};d.log.unshift(e);if($('#dlg').open&&cur===d)$('#fields')._log.unshift(e)}
+async function shrink(f){if(!/^image\/(jpeg|png|webp|gif)$/.test(f.type)&&/^image\//.test(f.type)===false)return f;
+ if(f.type==='image/gif'||f.size<1.5e6)return f;
+ try{const b=await createImageBitmap(f),s=Math.min(1,2000/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=Math.round(b.width*s);c.height=Math.round(b.height*s);c.getContext('2d').drawImage(b,0,0,c.width,c.height);
+  return await new Promise(r=>c.toBlob(x=>r(x||f),'image/jpeg',.85))}catch(e){return f}}
+const toB64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]);r.onerror=no;r.readAsDataURL(b)});
+async function upload(files){if(!canEdit()){toast('Connect with 🔑 to upload proofs');return}
+ const d=S.dealers.find(x=>x.id===V.id);let n=0;files=[...files];
+ for(const f of files){n++;$('#dmsg').textContent=`Uploading ${n} of ${files.length}…`;
+  try{if(!/^(image\/(jpeg|png|webp|gif)|video\/(mp4|webm)|application\/pdf)$/.test(f.type)){toast(`${f.name}: use JPG, PNG, WebP, MP4 or PDF`);continue}
+   const b=await shrink(f);if(b.size>20e6){toast(`${f.name} is over 20 MB`);continue}
+   const ext=(b.type==='image/jpeg'?'jpg':(b.type.split('/')[1]||'bin')).replace('jpeg','jpg');
+   const rel=`proofs/${d.id}/${Date.now()}-${V.k}-${(f.name||'proof').replace(/\.[^.]+$/,'').replace(/[^a-z0-9-]+/gi,'-').slice(0,40)}.${ext}`;
+   await api(GH.pre+rel,{method:'PUT',body:JSON.stringify({message:`Proof: ${d.branch} · ${KN[V.k]} (by ${KEY.name||'editor'})`,content:await toB64(b)})});
+   LOCAL[rel]=URL.createObjectURL(b);
+   d.proofs.push({id:rel,k:V.k,name:f.name||'proof',ct:b.type,d:today(),by:KEY.name||''});logTo(d,`Proof added: ${KN[V.k]}`);pending=true;V.i=1e9}
+  catch(er){toast(er.status===401||er.status===403?'Access key rejected. Reconnect with 🔑':`Could not upload ${f.name}`)}}
+ $('#dmsg').textContent=`Drop ${KN[V.k]} photos or a short video here`;renderV();summary()}
+$('#vf').addEventListener('change',e=>{upload(e.target.files);e.target.value=''});
+const dz=$('#drop');['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('hot')}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('hot')}));
+dz.addEventListener('drop',e=>{if(e.dataTransfer.files.length)upload(e.dataTransfer.files)});
+$('#vdel').addEventListener('click',async()=>{if(!vdelArm){vdelArm=true;$('#vdel').textContent='Click again: deletes permanently';return}
+ const d=S.dealers.find(x=>x.id===V.id),P=d.proofs.filter(p=>p.k===V.k),p=P[V.i];if(!p)return;
+ try{const x=await api(GH.pre+p.id);await api(GH.pre+p.id,{method:'DELETE',body:JSON.stringify({message:`Remove proof: ${d.branch}`,sha:x.sha})})}catch(er){if(er.status!==404){toast('Could not delete that proof');return}}
+ d.proofs=d.proofs.filter(x=>x!==p);logTo(d,`Proof removed: ${KN[V.k]}`);pending=true;renderV();summary()});
+function wall(){const all=[];S.dealers.forEach(d=>(d.proofs||[]).forEach(p=>all.push([d,p])));
+ $('#chips').innerHTML=[['','All'],...KINDS].map(([k,l])=>`<button type="button" data-w="${k}" class="${k===wk?'on':''}">${esc(l)} (${all.filter(([,p])=>!k||p.k===k).length})</button>`).join('');
+ $('#pcount').textContent=all.length?'· '+all.length+' uploaded':'';
+ const L=all.filter(([,p])=>!wk||p.k===wk).sort((a,b)=>b[1].d.localeCompare(a[1].d)).slice(0,24);
+ $('#wall').innerHTML=L.length?L.map(([d,p])=>`<button type="button" data-d="${esc(d.id)}" data-p="${esc(p.id)}"><div class="th">${media(p)}</div><small><b>${esc(d.branch.replace(/^Hyundai /,''))}</b><br>${esc(KN[p.k])} · ${esc(fmtD(p.d))}</small></button>`).join(''):'<p class="empty">No proofs yet. Open any dealer\'s Proofs button to drop in photos of billboards, A0 snapper frames, N-Line displays or screens.</p>'}
+$('#chips').addEventListener('click',e=>{const b=e.target.closest('[data-w]');if(b){wk=b.dataset.w;wall()}});
+$('#wall').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(b)openV(b.dataset.d,null,b.dataset.p)});
+
+/* Excel export */
+$('#xl').addEventListener('click',async()=>{
+ if(!window.ExcelJS){toast('Excel engine is still loading, try again in a moment');return}
+ try{
+ const wb=new ExcelJS.Workbook();wb.creator='Hyundai Retail Marketing';
+ const ws=wb.addWorksheet('Register',{views:[{state:'frozen',xSplit:2,ySplit:1}]});
+ const cols=[['Region',16],['Branch',26],['TV/digital screens',11],['A0 frames',10],['N-Line spaces',10],['Billboards',10],['Billboard type',20],['Billboard size',14],['HQ owner',12],['Dealer contact',20],['Phone',15],['Email',26],['Register status',17],['Last follow-up',14],['TV content',16],['Advert on screens',26],['A0 snapper frames',17],['Advert / KV in A0',26],['Billboard update',17],['Advert on billboard',26],['N-Line vehicle check',17],['Vehicle on N-Line display',24],['Proofs (BB / A0 / NL / TV)',18],['Notes',40],['Engagement log',60]];
+ ws.columns=cols.map(([h,w])=>({header:h,width:w}));
+ const dt=s=>s?new Date(s+'T00:00:00Z'):null,pc=(d,k)=>(d.proofs||[]).filter(p=>p.k===k).length;
+ S.dealers.forEach(d=>ws.addRow([d.region,d.branch,d.screens,d.a0,d.nline,d.bb,d.bbType,d.bbSize,d.owner,d.contact,d.phone,d.email,d.reg,dt(d.lastContact),d.screensSt,d.tvAd,d.poster,d.a0Ad,d.billboard,d.bbAd,d.nlineSt,d.nlineVeh,['bb','a0','nl','tv'].map(k=>pc(d,k)).join(' / '),d.notes,(d.log||[]).map(x=>x.d+': '+x.t).join('\n')]));
+ const hr=ws.getRow(1);hr.height=30;hr.eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1B1F25'}};c.alignment={vertical:'middle',wrapText:true}});
+ const last=S.dealers.length+101,lists={G:BBT.filter(Boolean),I:OWN.filter(Boolean),M:REG,O:TV,Q:ROLL,S:ROLL,U:NL};
+ for(let r=2;r<=last;r++){for(const[c,L]of Object.entries(lists))ws.getCell(c+r).dataValidation={type:'list',allowBlank:true,formulae:['"'+L.join(',')+'"']};
+  const x=ws.getCell('N'+r);x.numFmt='dd mmm yyyy';x.dataValidation={type:'date',operator:'greaterThan',allowBlank:true,formulae:[new Date(Date.UTC(2020,0,1))],showErrorMessage:true,errorTitle:'Date',error:'Enter a date, e.g. 2026-12-03'}}
+ ws.autoFilter={from:'A1',to:'Y1'};
+ const sm=wb.addWorksheet('Summary');sm.columns=[['Region',18],['Dealers',10],['Registers confirmed',13],['Screens',10],['A0 frames',11],['Billboards',11],['TV content live',13],['A0 posters live',13],['Billboards live',13],['N-Line correct vehicle',15]].map(([h,w])=>({header:h,width:w}));
+ const regs=[...new Set(S.dealers.map(d=>d.region))];const RR='Register!';
+ regs.forEach((g,i)=>{const r=i+2,D=S.dealers.filter(d=>d.region===g),s2=k=>D.reduce((a,d)=>a+(+d[k]||0),0),cf=(col,v,f)=>({formula:`COUNTIFS(${RR}A:A,A${r},${RR}${col}:${col},"${v}")`,result:D.filter(d=>d[f]===v).length}),sf=(col,k)=>({formula:`SUMIF(${RR}A:A,A${r},${RR}${col}:${col})`,result:s2(k)});
+  sm.addRow([g,{formula:`COUNTIF(${RR}A:A,A${r})`,result:D.length},cf('M','Confirmed','reg'),sf('C','screens'),sf('D','a0'),sf('F','bb'),cf('O',LIVE,'screensSt'),cf('Q',DONE,'poster'),cf('S',DONE,'billboard'),cf('U','Correct vehicle','nlineSt')])});
+ const tr=regs.length+2,tot=['Total'];'BCDEFGHIJ'.split('').forEach(c=>tot.push({formula:`SUM(${c}2:${c}${tr-1})`}));sm.addRow(tot);
+ sm.getRow(tr).font={bold:true};
+ sm.getRow(1).eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1B1F25'}}});
+ sm.addRow([]);sm.addRow(['Deadline',dt(S.settings.deadline)]).getCell(2).numFmt='dd mmm yyyy';sm.addRow(['Exported',new Date().toLocaleString('en-ZA')]);
+ const buf=await wb.xlsx.writeBuffer();
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));a.download=`Hyundai_Dealer_Brand_Assets_${today()}.xlsx`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);toast('Excel downloaded');
+ }catch(e){toast(e&&e.code==='declined'?'Download cancelled':'Could not build the Excel file'+(e&&e.message?': '+e.message:''))}
+});
+
+all();
+}
+</script>
+</body>
+</html>
