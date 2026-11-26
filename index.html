@@ -76,6 +76,12 @@ td:nth-child(-n+2),th:nth-child(-n+2){position:sticky;left:0;background:var(--ca
 td:nth-child(2),th:nth-child(2){left:var(--c0,150px);box-shadow:inset -1px 0 0 var(--g1),6px 0 8px -6px #000}
 tbody tr:hover td:nth-child(-n+2){background:var(--card2)}
 [data-lab]{border-radius:4px}body.editing [data-lab]{outline:1px dashed var(--g2);outline-offset:2px;cursor:text;padding:0 2px}body.editing [data-lab]:focus{outline:1px solid var(--acc);color:var(--ink)}
+.hleg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--mut);margin:0 0 10px}.hleg i{display:inline-block;width:8px;height:8px;border-radius:99px;margin-right:6px}
+tr.h-g td:first-child{box-shadow:inset 4px 0 0 #34c27a}tr.h-a td:first-child{box-shadow:inset 4px 0 0 #d9a441}tr.h-r td:first-child{box-shadow:inset 4px 0 0 #df6150}
+tr.h-g td{background:#34c27a0d}tr.h-a td{background:#d9a4410d}tr.h-r td{background:#df61500f}
+tr.h-g td:nth-child(-n+2){background:#18201b}tr.h-a td:nth-child(-n+2){background:#201d16}tr.h-r td:nth-child(-n+2){background:#221716}
+.s-ok{border-color:#2e7d55!important;color:#8fe0b4!important}.s-mid{border-color:#8a6d2f!important;color:#f0cc85!important}
+td input[type=number]{max-width:56px;text-align:center;-moz-appearance:textfield}td input[type=number]::-webkit-inner-spin-button{opacity:.4}
 .rohint{display:none}body.ro .rohint{display:block}
 #eh.on{border-color:var(--acc);color:var(--acc)}
 td select,td input{min-height:34px;font-size:13.5px;padding:0 6px;background:transparent}
@@ -160,13 +166,16 @@ dialog::backdrop{background:#000000b3;backdrop-filter:blur(3px)}
   <select id="fr" aria-label="Region"></select>
   <select id="fs" aria-label="Register status"></select>
   <select id="fo" aria-label="HQ owner"></select>
+  <select id="fh" aria-label="Dealer status"></select>
   <button type="button" id="rcw" title="Put every column back to its default width">Reset columns</button>
   <button type="button" id="eh" title="Rename column and section headings">Edit headings</button>
   <label style="display:flex;gap:6px;align-items:center;font-size:14px"><input type="checkbox" id="fod" style="min-height:20px;width:20px"> No follow-up in 14+ days</label>
  </div>
+ <datalist id="ownlist"></datalist>
+ <div class="hleg"><span><i style="background:#34c27a"></i>Green: all items aligned</span><span><i style="background:#d9a441"></i>Amber: briefed, some items open</span><span><i style="background:#df6150"></i>Red: outstanding, no follow-up in 14+ days</span><span><i style="background:#3a3f47"></i>Plain: not started</span></div>
  <p class="rohint note" style="margin:0 0 10px">Your changes save on this device. Click <b>🔑 Connect to edit</b> at the top to share them with the team and to upload proofs.</p>
  <div class="scroll"><table id="tbl"><colgroup id="cg"></colgroup><thead><tr>
-  <th>Dealer</th><th>Region</th><th class="n" title="TV / digital screens">TV</th><th class="n" title="A0 clip-on poster frames">A0</th><th class="n" title="N-Line branded display spaces">NL</th><th class="n" title="Billboards on premises">BB</th><th>Register</th><th>HQ owner</th><th>Last follow-up</th><th>A0 posters</th><th>Billboard update</th><th>TV content</th><th>N-Line vehicle</th><th>Proofs</th>
+  <th>Dealer</th><th>Region</th><th class="n" title="TV / digital screens (edit the count)">TV</th><th class="n" title="A0 clip-on poster frames (edit the count)">A0</th><th class="n" title="N-Line branded display spaces (edit the count)">NL</th><th>Register</th><th>HQ owner</th><th>Last follow-up</th><th>A0 posters</th><th>Billboard</th><th>TV content</th><th>N-Line vehicle</th><th>Proofs</th>
  </tr></thead><tbody id="rows"></tbody></table></div>
  <p class="note" id="foot"></p>
 </div></main>
@@ -201,93 +210,112 @@ dialog::backdrop{background:#000000b3;backdrop-filter:blur(3px)}
 {
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const REG=['Not contacted','Contacted','Awaiting reply','Confirmed','Needs correction'];
-const REGC={'Not contacted':'#343941','Contacted':'#5c636d','Awaiting reply':'#8b939e','Confirmed':'#3d8bfd','Needs correction':'#df6150'};
-const DONE='Installed / live';
-const ROLL=['Not started','Artwork in design','Quoting','Approved','In production','Content sent','Downloaded',DONE,'N/A'];
-const ROLLC={'Not started':'#343941','Artwork in design':'#4a5059','Quoting':'#5c636d','Approved':'#737b86','In production':'#8b939e','Content sent':'#a5adb7','Downloaded':'#bfc6cf',[DONE]:'#3d8bfd','N/A':'#24282e'};
-const LIVE='Uploaded & live';
-const TV=['Not set up','Content sent','Downloaded',LIVE,'No screen'];
-const TVC={'Not set up':'#343941','Content sent':'#a5adb7','Downloaded':'#bfc6cf',[LIVE]:'#3d8bfd','No screen':'#24282e'};
-const NL=['Not checked','Correct vehicle','Wrong vehicle','Empty','No display'];
-const NLC={'Not checked':'#343941','Correct vehicle':'#3d8bfd','Wrong vehicle':'#df6150','Empty':'#8b939e','No display':'#24282e'};
+const G='#34c27a',A='#d9a441',RD='#df6150',GR='#3a3f47',DK='#26292e',MID='#7a828d';
+const REG=['Pending','Briefed','Contacted','Awaiting reply','Confirmed'];
+const REGC={'Pending':GR,'Briefed':A,'Contacted':MID,'Awaiting reply':'#b08a3e','Confirmed':G};
+const A0T=['','Latest campaign KV / TVC','Model / product poster','Monthly specials & offers','New model launch','Service & parts offer','Other'];
+const KV=A0T[1];
+const BBH=['','Yes','No','In progress','No plan'];
+const BBC={'Yes':G,'In progress':A,'No':MID,'No plan':DK,'':GR};
+const TVS=['No action yet','Briefed – pending','Content shared','No screen'];
+const TVSC={'No action yet':GR,'Briefed – pending':A,'Content shared':G,'No screen':DK};
+const NLV=['','Venue N Line','Creta N Line','Tucson N Line','Grand i10','i20','Venue','Creta','Tucson','Alcazar','Santa Fe','Palisade','Staria','Other'];
 const KINDS=[['bb','Billboard'],['a0','A0 snapper frame'],['nl','N-Line display'],['tv','TV / digital screen']];
-const OWN=['','Mark','Joe','Namhla','Nontokozo'];
-const BBT=['','None on site','Pylon / totem','Wall-mounted static','Rooftop static','Freestanding static','LED digital'];
+const BBT=['','Pylon / totem','Wall-mounted static','Rooftop static','Freestanding static','LED digital'];
 let S=JSON.parse($('#state').textContent);
 let editMode=false;
 const lab=(k,def)=>((S.settings&&S.settings.labels)||{})[k]||def;
-function migrate(s){const map={Installed:DONE,Running:LIVE};for(const d of s.dealers){if(d.owner==='Aubrey')d.owner='';for(const f of['poster','billboard','screensSt'])if(map[d[f]])d[f]=map[d[f]];
- d.nlineSt=d.nlineSt||'Not checked';d.proofs=d.proofs||[];for(const k of['nlineVeh','tvAd','a0Ad','bbAd'])d[k]=d[k]||''}return s}
+function migrate(s){
+ const RM={'Not contacted':'Pending','Needs correction':'Awaiting reply'};
+ for(const d of s.dealers){
+  if(RM[d.reg])d.reg=RM[d.reg];if(!REG.includes(d.reg))d.reg='Pending';
+  if(['Mark','Joe','Namhla','Nontokozo','Aubrey'].includes(d.owner)&&!d.ownerSet)d.owner='';
+  if(d.a0Type===undefined)d.a0Type=['Installed / live','Installed'].includes(d.poster)?KV:'';
+  if(d.bbHas===undefined)d.bbHas=d.bb>0?'Yes':d.bb===0?'No':'';
+  if(d.tvSt===undefined)d.tvSt=['Uploaded & live','Running','Downloaded','Content sent'].includes(d.screensSt)?'Content shared':d.screensSt==='No screen'?'No screen':'No action yet';
+  if(d.nlVeh===undefined)d.nlVeh=NLV.includes(d.nlineVeh)?d.nlineVeh:'';
+  d.proofs=d.proofs||[];d.log=d.log||[];for(const k of['tvAd','a0Ad','bbAd','owner','lastContact'])d[k]=d[k]||'';
+ }return s}
 migrate(S);
 const today=()=>new Date().toISOString().slice(0,10);
-const R=n=>'R '+Math.round(n||0).toLocaleString('en-ZA');
 const ago=n=>new Date(Date.now()-n*864e5).toISOString().slice(0,10);
-const complete=d=>d.reg==='Confirmed'&&[DONE,'N/A'].includes(d.poster)&&[DONE,'N/A'].includes(d.billboard)&&[LIVE,'No screen'].includes(d.screensSt)&&['Correct vehicle','No display'].includes(d.nlineSt);
-const overdue=d=>!complete(d)&&(!d.lastContact||d.lastContact<ago(14));
-const cls=v=>['Confirmed',DONE,LIVE,'Correct vehicle'].includes(v)?'s-ok':['Needs correction','Wrong vehicle'].includes(v)?'s-bad':['Not contacted','Not started','Not set up','Not checked','N/A','No screen','No display'].includes(v)?'':'s-mid';
-const opts=(list,v)=>list.map(o=>`<option${o===v?' selected':''}>${esc(o)}</option>`).join('');
+/* each dealer's checklist: TV content shared, A0 on latest KV, billboard decided, N-Line vehicle set, register confirmed */
+function items(d){const it=[['reg',d.reg==='Confirmed']];
+ if((+d.screens||0)>0&&d.tvSt!=='No screen')it.push(['tv',d.tvSt==='Content shared']);
+ if((+d.a0||0)>0)it.push(['a0',d.a0Type===KV]);
+ it.push(['bb',['Yes','No','No plan'].includes(d.bbHas)]);
+ if((+d.nline||0)>0)it.push(['nl',!!d.nlVeh]);return it}
+const started=d=>d.reg!=='Pending'||d.a0Type||d.bbHas||d.tvSt!=='No action yet'||d.nlVeh||d.lastContact;
+const complete=d=>items(d).every(x=>x[1]);
+const overdue=d=>started(d)&&!complete(d)&&(!d.lastContact||d.lastContact<ago(14));
+function health(d){if(!started(d))return['none','Not started'];if(complete(d))return['g','All aligned'];if(overdue(d))return['r','Outstanding: no follow-up in 14+ days'];return['a','In progress: some items still open']}
+const cls=v=>['Confirmed','Content shared','Yes',KV].includes(v)?'s-ok':['Briefed','Briefed – pending','In progress','Awaiting reply','Contacted'].includes(v)?'s-mid':'';
+const opts=(list,v)=>list.map(o=>`<option value="${esc(o)}"${o===v?' selected':''}>${esc(o||'Select…')}</option>`).join('');
 const fmtD=s=>s?new Date(s+'T00:00').toLocaleDateString('en-ZA',{day:'numeric',month:'short'}):'';
-let F={q:'',r:'',s:'',o:'',od:false};
+const owners=()=>[...new Set(S.dealers.map(d=>d.owner).filter(Boolean))].sort();
+let F={q:'',r:'',s:'',o:'',od:false,h:''};
 try{Object.assign(F,JSON.parse(sessionStorage.getItem('dbat-f')||'{}'))}catch(e){}
 function saveF(){try{sessionStorage.setItem('dbat-f',JSON.stringify(F))}catch(e){}}
 
+function ring(title,key,cats,tot,ok,note){let off=0;const pct=tot?Math.round(ok/tot*100):0;
+ const arcs=tot?cats.filter(v=>v[1]).map(([l,v,c])=>{const len=v/tot*100,g=Math.max(len-.6,.4),s=`<circle cx="50" cy="50" r="40" fill="none" stroke="${c}" stroke-width="12" pathLength="100" stroke-dasharray="${g} ${100-g}" stroke-dashoffset="${-off}"><title>${esc(l)}: ${v}</title></circle>`;off+=len;return s}).join(''):'';
+ return `<div class="dn"><h3 data-lab="dn-${key}" data-def="${esc(title)}"${editMode?' contenteditable="true" spellcheck="false"':''}>${esc(lab('dn-'+key,title))}</h3><div class="ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="none" stroke="${DK}" stroke-width="12"/>${arcs}</svg><div><b>${tot?pct+'%':'–'}</b><small>${ok} of ${tot}</small></div></div>
+ <ul class="dl">${cats.filter((v,i)=>v[1]||i===0).map(([l,v,c])=>`<li><i style="background:${c}"></i><span>${esc(l)}</span><em>${v}</em></li>`).join('')}</ul>${note?`<p class="dnote">${esc(note)}</p>`:''}</div>`}
+
 function summary(){
- const D=S.dealers,n=D.length,sum=k=>D.reduce((a,d)=>a+(+d[k]||0),0);
- const conf=D.filter(d=>d.reg==='Confirmed').length,bbKnown=D.filter(d=>d.bb!=null&&d.bb!=='').length;
+ const D=S.dealers,n=D.length,sum=k=>D.reduce((a,d)=>a+(+d[k]||0),0),w=(f,pred)=>D.filter(pred).reduce((a,d)=>a+(+d[f]||0),0);
+ const conf=D.filter(d=>d.reg==='Confirmed').length;
  const dl=Math.ceil((new Date(S.settings.deadline+'T00:00')-new Date(today()+'T00:00'))/864e5);
  $('#days').textContent=dl;$('#dlabel').textContent=(dl<0?'days past':'days to')+' deadline · '+new Date(S.settings.deadline+'T00:00').toLocaleDateString('en-ZA',{day:'numeric',month:'long',year:'numeric'});
- $('#headline').textContent=`${conf} of ${n} dealer registers confirmed`;
- const k=[[n,'Dealerships'],[conf+' / '+n,'Registers confirmed'],[sum('screens'),'TV / digital screens'],[sum('a0'),'A0 poster frames'],[sum('nline'),'N-Line display spaces'],[bbKnown?sum('bb'):'–',`Billboards (${bbKnown} dealers logged)`],[D.reduce((a,d)=>a+(d.proofs||[]).length,0),'Proofs uploaded']];
- if($('#kpis'))$('#kpis').innerHTML=k.map(([b,s])=>`<div class="kpi"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join('');
- const DN=[
-  ['Dealer registers','dealers',null,'reg',[['Confirmed','Confirmed','#3d8bfd'],['Awaiting reply','Awaiting reply','#8b939e'],['Contacted','Contacted','#5c636d'],['Needs correction','Needs correction','#df6150'],['Not contacted','Not contacted','#343941']]],
-  ['A0 snapper frames','frames','a0','poster',[['New content live',[DONE],'#3d8bfd'],['Content sent / downloaded',['Content sent','Downloaded'],'#bfc6cf'],['In progress',['Artwork in design','Quoting','Approved','In production'],'#737b86'],['Not started',['Not started'],'#343941'],['N/A',['N/A'],'#24282e']]],
-  ['Billboards','boards','bb','billboard',[['New content live',[DONE],'#3d8bfd'],['Content sent / downloaded',['Content sent','Downloaded'],'#bfc6cf'],['In progress',['Artwork in design','Quoting','Approved','In production'],'#737b86'],['Not started',['Not started'],'#343941'],['N/A',['N/A'],'#24282e']]],
-  ['TV / digital screens','screens','screens','screensSt',[['Uploaded & live',[LIVE],'#3d8bfd'],['Downloaded',['Downloaded'],'#bfc6cf'],['Content sent',['Content sent'],'#8b939e'],['Not set up',['Not set up'],'#343941'],['No screen',['No screen'],'#24282e']]],
-  ['N-Line stands','stands','nline','nlineSt',[['Right vehicle',['Correct vehicle'],'#3d8bfd'],['Wrong vehicle',['Wrong vehicle'],'#df6150'],['Empty',['Empty'],'#8b939e'],['Not checked',['Not checked'],'#343941']]]];
- $('#donuts').innerHTML=DN.map(([title,unit,wf,sf,cats])=>{
-  const w=d=>wf?(+d[wf]||0):1,tot=D.reduce((a,d)=>a+w(d),0);
-  const vals=cats.map(([l,ss,c])=>[l,D.filter(d=>[].concat(ss).includes(d[sf])).reduce((a,d)=>a+w(d),0),c]);
-  const ok=vals[0][1],pct=tot?Math.round(ok/tot*100):0;let off=0;
-  const arcs=tot?vals.filter(v=>v[1]).map(([l,v,c])=>{const len=v/tot*100,s=`<circle cx="50" cy="50" r="40" fill="none" stroke="${c}" stroke-width="12" pathLength="100" stroke-dasharray="${Math.max(len-.6,.4)} ${100-Math.max(len-.6,.4)}" stroke-dashoffset="${-off}"><title>${esc(l)}: ${v}</title></circle>`;off+=len;return s}).join(''):'';
-  const unk=wf==='bb'?D.filter(d=>d.bb==null||d.bb==='').length:0;
-  return `<div class="dn"><h3 data-lab="dn-${esc(sf)}" data-def="${esc(title)}"${editMode?' contenteditable="true" spellcheck="false"':''}>${esc(lab('dn-'+sf,title))}</h3><div class="ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="none" stroke="#24282e" stroke-width="12"/>${arcs}</svg><div><b>${tot?pct+'%':'–'}</b><small>${ok} of ${tot}</small></div></div>
-  <ul class="dl">${vals.filter(v=>v[1]||v===vals[0]).map(([l,v,c])=>`<li><i style="background:${c}"></i><span>${esc(l)}</span><em>${v}</em></li>`).join('')}</ul>${unk?`<p class="dnote">${unk} dealers' billboard count not logged yet</p>`:''}</div>`}).join('');
+ const hc=D.reduce((a,d)=>(a[health(d)[0]]++,a),{g:0,a:0,r:0,none:0});
+ $('#headline').textContent=`${conf} of ${n} dealers confirmed · ${hc.g} fully aligned`;
+ const tv=sum('screens'),a0=sum('a0'),nl=sum('nline');
+ const nlTop=Object.entries(D.filter(d=>d.nlVeh&&(+d.nline||0)>0).reduce((m,d)=>(m[d.nlVeh]=(m[d.nlVeh]||0)+(+d.nline||0),m),{})).sort((x,y)=>y[1]-x[1]);
+ const nlSet=nlTop.reduce((a,x)=>a+x[1],0);
+ $('#donuts').innerHTML=[
+  ring('Dealer registers','reg',REG.slice().reverse().map(s=>[s,D.filter(d=>d.reg===s).length,REGC[s]]),n,conf),
+  ring('A0 snapper frames','a0',[['Latest campaign KV',w('a0',d=>d.a0Type===KV),G],['Other poster content',w('a0',d=>d.a0Type&&d.a0Type!==KV),A],['Not set',w('a0',d=>!d.a0Type),GR]],a0,w('a0',d=>d.a0Type===KV)),
+  ring('Billboards','bb',[['Has billboard',D.filter(d=>d.bbHas==='Yes').length,G],['In progress',D.filter(d=>d.bbHas==='In progress').length,A],['No billboard',D.filter(d=>d.bbHas==='No').length,MID],['No plan',D.filter(d=>d.bbHas==='No plan').length,DK],['Not checked',D.filter(d=>!d.bbHas).length,GR]],n,D.filter(d=>d.bbHas==='Yes').length,'Dealers with a billboard on premises'),
+  ring('TV / digital screens','tv',[['Content shared',w('screens',d=>d.tvSt==='Content shared'),G],['Briefed – pending',w('screens',d=>d.tvSt==='Briefed – pending'),A],['No action yet',w('screens',d=>d.tvSt==='No action yet'),GR],['No screen',w('screens',d=>d.tvSt==='No screen'),DK]],tv,w('screens',d=>d.tvSt==='Content shared')),
+  ring('N-Line stands','nl',[...nlTop.slice(0,3).map(([v,c],i)=>[v,c,[G,'#2a9d64','#22804f'][i]]),...(nlTop.length>3?[['Other vehicles',nlTop.slice(3).reduce((a,x)=>a+x[1],0),'#1d6b43']]:[]),['No vehicle set',nl-nlSet,GR]],nl,nlSet,'Champion vehicle on display this month')
+ ].join('');
  const regs=[...new Set(D.map(d=>d.region))];
  $('#regions').innerHTML=regs.map(r=>{const g=D.filter(d=>d.region===r),c=g.filter(d=>d.reg==='Confirmed').length;
-  return `<div class="reg" data-r="${esc(r)}" title="Filter to ${esc(r)}"><b>${esc(r)}</b><div class="bar">${REG.map(s=>{const x=g.filter(d=>d.reg===s).length;return x?`<i style="width:${x/g.length*100}%;background:${REGC[s]}" title="${esc(s)}: ${x}"></i>`:''}).join('')}</div><small>${c}/${g.length} confirmed · ${g.reduce((a,d)=>a+(+d.a0||0),0)} A0</small></div>`}).join('');
+  return `<div class="reg" data-r="${esc(r)}" title="Filter to ${esc(r)}"><b>${esc(r)}</b><div class="bar">${REG.slice().reverse().map(s=>{const x=g.filter(d=>d.reg===s).length;return x?`<i style="width:${x/g.length*100}%;background:${REGC[s]}" title="${esc(s)}: ${x}"></i>`:''}).join('')}</div><small>${c}/${g.length} confirmed · ${g.reduce((a,d)=>a+(+d.screens||0),0)} TV · ${g.reduce((a,d)=>a+(+d.a0||0),0)} A0 · ${g.reduce((a,d)=>a+(+d.nline||0),0)} NL</small></div>`}).join('');
  $('#legend').innerHTML=REG.map(s=>`<span><i style="background:${REGC[s]}"></i>${s}</span>`).join('');
- const RW=[['A0 posters','poster',ROLL,ROLLC,DONE],['Billboards','billboard',ROLL,ROLLC,DONE],['TV content','screensSt',TV,TVC,LIVE],['N-Line vehicle','nlineSt',NL,NLC,'Correct vehicle']];
- $('#roll').innerHTML=RW.map(([l,f,Ls,C,ok])=>{const done=D.filter(d=>d[f]===ok).length;
-  return `<div class="mini"><span>${l}</span><div class="bar">${Ls.map(s=>{const x=D.filter(d=>d[f]===s).length;return x?`<i style="width:${x/n*100}%;background:${C[s]}" title="${esc(s)}: ${x}"></i>`:''}).join('')}</div><small class="n" title="${esc(ok)}">${done}/${n}</small></div>`}).join('')+`<div class="legend"><span><i style="background:#343941"></i>Not started</span><span><i style="background:#737b86"></i>In progress</span><span><i style="background:#bfc6cf"></i>Content sent / downloaded</span><span><i style="background:#3d8bfd"></i>Live / correct vehicle</span><span><i style="background:#df6150"></i>Wrong vehicle</span></div>`;
+ const RW=[['A0 posters',d=>(+d.a0||0)>0,d=>d.a0Type===KV?G:d.a0Type?A:GR,'on latest KV'],['Billboards',()=>true,d=>BBC[d.bbHas]||GR,'decided'],['TV content',d=>(+d.screens||0)>0&&d.tvSt!=='No screen',d=>TVSC[d.tvSt]||GR,'shared'],['N-Line vehicle',d=>(+d.nline||0)>0,d=>d.nlVeh?G:GR,'vehicle set'],['Dealer status',()=>true,d=>({g:G,a:A,r:RD,none:GR})[health(d)[0]],'fully aligned']];
+ const order=[G,'#2a9d64',A,'#b08a3e',MID,RD,DK,GR];
+ $('#roll').innerHTML=RW.map(([l,app,col,word])=>{const P=D.filter(app),m=P.length;const cnt={};P.forEach(d=>{const c=col(d);cnt[c]=(cnt[c]||0)+1});const done=cnt[G]||0;
+  return `<div class="mini"><span>${l}</span><div class="bar">${order.filter(c=>cnt[c]).map(c=>`<i style="width:${cnt[c]/(m||1)*100}%;background:${c}"></i>`).join('')}</div><small class="n" title="${done} of ${m} ${word}">${done}/${m}</small></div>`}).join('')+
+  `<div class="legend"><span><i style="background:${G}"></i>Done / shared</span><span><i style="background:${A}"></i>Briefed / in progress</span><span><i style="background:${RD}"></i>Outstanding</span><span><i style="background:${GR}"></i>No action yet</span></div>`;
 }
 
-function row(d){
- const od=overdue(d);
- return `<tr data-id="${esc(d.id)}"><td><button class="bn" data-open type="button">${esc(d.branch.replace(/^Hyundai /,''))}</button></td><td>${esc(d.region)}</td>
- <td class="n">${d.screens==null?'<span class="od" title="Needs confirmation">?</span>':esc(d.screens)}</td><td class="n">${esc(d.a0)}</td><td class="n">${esc(d.nline)}</td>
- <td class="n"><input type="number" min="0" data-f="bb" value="${esc(d.bb??'')}" placeholder="?" aria-label="Billboards"></td>
+const num=(f,v)=>`<input type="number" min="0" inputmode="numeric" data-f="${f}" value="${esc(v??'')}" placeholder="?" aria-label="${f}">`;
+function row(d){const [h,ht]=health(d),od=overdue(d);
+ return `<tr data-id="${esc(d.id)}" class="h-${h}"><td title="${esc(ht)}"><button class="bn" data-open type="button">${esc(d.branch.replace(/^Hyundai /,''))}</button></td><td>${esc(d.region)}</td>
+ <td class="n">${num('screens',d.screens)}</td><td class="n">${num('a0',d.a0)}</td><td class="n">${num('nline',d.nline)}</td>
  <td><select data-f="reg" class="${cls(d.reg)}">${opts(REG,d.reg)}</select></td>
- <td><select data-f="owner">${opts(OWN,d.owner)}</select></td>
- <td><input type="date" data-f="lastContact" value="${esc(d.lastContact)}" max="${today()}" class="${od?'s-mid':''}" title="${od?'No follow-up in 14+ days':''}"></td>
- <td><select data-f="poster" class="${cls(d.poster)}">${opts(ROLL,d.poster)}</select></td>
- <td><select data-f="billboard" class="${cls(d.billboard)}">${opts(ROLL,d.billboard)}</select></td>
- <td><select data-f="screensSt" class="${cls(d.screensSt)}">${opts(TV,d.screensSt)}</select></td>
- <td><select data-f="nlineSt" class="${cls(d.nlineSt)}">${opts(NL,d.nlineSt)}</select></td>
+ <td><input type="text" data-f="owner" list="ownlist" value="${esc(d.owner)}" placeholder="Type name" autocomplete="off"></td>
+ <td><input type="date" data-f="lastContact" value="${esc(d.lastContact)}" max="${today()}" class="${od?'s-bad':''}" title="${od?'No follow-up in 14+ days':''}"></td>
+ <td><select data-f="a0Type" class="${cls(d.a0Type)}" title="${esc(d.a0Ad)}">${opts(A0T,d.a0Type)}</select></td>
+ <td><select data-f="bbHas" class="${cls(d.bbHas)}">${opts(BBH,d.bbHas)}</select></td>
+ <td><select data-f="tvSt" class="${cls(d.tvSt)}">${opts(TVS,d.tvSt)}</select></td>
+ <td><select data-f="nlVeh" class="${d.nlVeh?'s-ok':''}">${opts(NLV,d.nlVeh)}</select></td>
  <td><button type="button" class="pf ${(d.proofs||[]).length?'has':''}" data-pv>${(d.proofs||[]).length?`Preview proofs (${(d.proofs||[]).length})`:'Add proof'}</button></td></tr>`;
 }
 function list(){
  const q=F.q.toLowerCase();
- const L=S.dealers.filter(d=>(!F.r||d.region===F.r)&&(!F.s||d.reg===F.s)&&(!F.o||d.owner===F.o)&&(!F.od||overdue(d))&&(!q||[d.branch,d.contact,d.notes,d.email].join(' ').toLowerCase().includes(q)));
- $('#rows').innerHTML=L.length?L.map(row).join(''):'<tr><td colspan="14" class="empty">No dealers match these filters.</td></tr>';
- $('#foot').textContent=`Showing ${L.length} of ${S.dealers.length} dealers. Drag the line at the edge of any column header to make it wider or narrower; text stacks to fit. Click a dealer name for contacts, billboard details, adverts showing, proofs and the engagement log.${S.updated?' Last saved '+new Date(S.updated).toLocaleString('en-ZA',{dateStyle:'medium',timeStyle:'short'})+'.':''}`;
+ const L=S.dealers.filter(d=>(!F.r||d.region===F.r)&&(!F.s||d.reg===F.s)&&(!F.o||d.owner===F.o)&&(!F.h||health(d)[0]===F.h)&&(!F.od||overdue(d))&&(!q||[d.branch,d.contact,d.notes,d.email,d.owner,d.nlVeh,d.a0Ad].join(' ').toLowerCase().includes(q)));
+ $('#rows').innerHTML=L.length?L.map(row).join(''):'<tr><td colspan="13" class="empty">No dealers match these filters.</td></tr>';
+ $('#ownlist').innerHTML=owners().map(o=>`<option value="${esc(o)}">`).join('');
+ $('#foot').textContent=`Showing ${L.length} of ${S.dealers.length} dealers. Edit the TV, A0 and NL counts straight in the table; the charts update as you type. Click a dealer name for contacts, poster details, billboard details, proofs and the engagement log.${S.updated?' Last saved '+new Date(S.updated).toLocaleString('en-ZA',{dateStyle:'medium',timeStyle:'short'})+(S.updatedBy?' by '+S.updatedBy:'')+'.':''}`;
 }
 function filters(){
  const regs=[...new Set(S.dealers.map(d=>d.region))];
  $('#fr').innerHTML='<option value="">All regions</option>'+regs.map(r=>`<option${r===F.r?' selected':''}>${esc(r)}</option>`).join('');
  $('#fs').innerHTML='<option value="">Any register status</option>'+REG.map(r=>`<option${r===F.s?' selected':''}>${r}</option>`).join('');
- $('#fo').innerHTML='<option value="">Any owner</option>'+OWN.filter(Boolean).map(r=>`<option${r===F.o?' selected':''}>${r}</option>`).join('');
+ $('#fo').innerHTML='<option value="">Any owner</option>'+owners().map(r=>`<option${r===F.o?' selected':''}>${esc(r)}</option>`).join('');
+ $('#fh').innerHTML=[['','Any dealer status'],['g','Green: all aligned'],['a','Amber: in progress'],['r','Red: outstanding'],['none','Not started']].map(([v,l])=>`<option value="${v}"${v===F.h?' selected':''}>${l}</option>`).join('');
  $('#q').value=F.q;$('#fod').checked=F.od;$('#deadline').value=S.settings.deadline;
 }
 function all(){summary();filters();list();wall()}
@@ -328,25 +356,28 @@ function applyRO(){const ro=!canEdit();document.body.classList.toggle('ro',ro);$
 
 
 /* table edits */
+const NAMES={reg:'Register',owner:'HQ owner',lastContact:'Followed up',a0Type:'A0 posters',bbHas:'Billboard',tvSt:'TV content',nlVeh:'N-Line vehicle',screens:'TV count',a0:'A0 count',nline:'N-Line count'};
+const NUMF=['screens','a0','nline'];
+$('#rows').addEventListener('input',e=>{const el=e.target,f=el.dataset.f;if(!NUMF.includes(f))return;const d=S.dealers.find(x=>x.id===el.closest('tr').dataset.id);d[f]=el.value===''?null:Math.max(0,+el.value||0);summary()});
 $('#rows').addEventListener('change',e=>{const el=e.target,f=el.dataset.f;if(!f)return;const tr=el.closest('tr'),d=S.dealers.find(x=>x.id===tr.dataset.id);
- d[f]=f==='bb'?(el.value===''?null:+el.value):el.value;
- if(f==='reg'&&['Contacted','Awaiting reply','Confirmed'].includes(el.value))d.lastContact=today();
- d.log.unshift({d:today(),t:`${({reg:'Register',poster:'A0 posters',billboard:'Billboard',owner:'Owner',lastContact:'Followed up',bb:'Billboards',screensSt:'TV content',nlineSt:'N-Line vehicle'})[f]} → ${el.value||'cleared'}`});
- tr.outerHTML=row(d);summary();touch()});
+ const old=d[f];d[f]=NUMF.includes(f)?(el.value===''?null:Math.max(0,+el.value||0)):el.value.trim();if(f==='owner')d.ownerSet=true;
+ if(f==='reg'&&['Briefed','Contacted','Awaiting reply','Confirmed'].includes(d.reg))d.lastContact=today();
+ if(String(old??'')!==String(d[f]??''))d.log.unshift({d:today(),t:`${NAMES[f]||f} → ${d[f]===''||d[f]==null?'cleared':d[f]}`});
+ tr.outerHTML=row(d);summary();if(f==='owner')filters();touch()});
 $('#rows').addEventListener('click',e=>{const tr=e.target.closest('tr');if(!tr)return;if(e.target.closest('[data-open]'))openD(tr.dataset.id);if(e.target.closest('[data-pv]'))openV(tr.dataset.id)});
 $('#regions').addEventListener('click',e=>{const r=e.target.closest('.reg');if(!r)return;F.r=F.r===r.dataset.r?'':r.dataset.r;saveF();filters();list();$('#tbl').scrollIntoView({behavior:'smooth'})});
-[['#q','q','input'],['#fr','r','change'],['#fs','s','change'],['#fo','o','change']].forEach(([s,k,ev])=>$(s).addEventListener(ev,e=>{F[k]=e.target.value;saveF();list()}));
+[['#q','q','input'],['#fr','r','change'],['#fs','s','change'],['#fo','o','change'],['#fh','h','change']].forEach(([s,k,ev])=>$(s).addEventListener(ev,e=>{F[k]=e.target.value;saveF();list()}));
 $('#fod').addEventListener('change',e=>{F.od=e.target.checked;saveF();list()});
 $('#deadline').addEventListener('change',e=>{if(e.target.value){S.settings.deadline=e.target.value;summary();touch()}});
 
 /* dialog */
 let cur=null,delArm=false;
-const FIELDS=[['h','Asset count'],['screens','TV / digital screens','num'],['a0','A0 clip-on frames','num'],['nline','N-Line display spaces','num'],['bb','Billboards on premises','num'],['bbType','Billboard type','sel',BBT],['bbSize','Billboard size (e.g. 6m x 3m)','txt'],
- ['h','Engagement'],['owner','HQ owner','sel',OWN],['reg','Register status','sel',REG],['contact','Dealer contact person','txt'],['phone','Phone','txt'],['email','Email','txt'],['lastContact','Last follow-up','date'],
- ['h','Rollout and content check'],['screensSt','TV / digital screens: content','sel',TV],['tvAd','Advert showing on screens','txt'],['poster','A0 snapper frames','sel',ROLL],['a0Ad','Advert / KV in A0 frames','txt'],['billboard','Billboard update','sel',ROLL],['bbAd','Advert on billboard','txt'],['nlineSt','N-Line display: right vehicle?','sel',NL],['nlineVeh','Vehicle on N-Line display','txt'],
+const FIELDS=[['h','Asset count'],['screens','TV / digital screens','num'],['a0','A0 clip-on frames','num'],['nline','N-Line display spaces','num'],['bbHas','Billboard on premises?','sel',BBH],['bbType','Billboard type','sel',BBT],['bbSize','Billboard size (e.g. 6m x 3m)','txt'],
+ ['h','Engagement'],['owner','HQ owner (type a name)','txt'],['reg','Register status','sel',REG],['contact','Dealer contact person','txt'],['phone','Phone','txt'],['email','Email','txt'],['lastContact','Last follow-up','date'],
+ ['h','Rollout and content'],['a0Type','A0 posters: content type','sel',A0T],['a0Ad','A0 poster detail (e.g. Creta N Line, December specials)','txt'],['tvSt','TV content','sel',TVS],['tvAd','Advert / TVC on screens','txt'],['bbAd','Advert on billboard','txt'],['nlVeh','N-Line champion vehicle this month','sel',NLV],
  ['h','Identity'],['branch','Dealer name','txt'],['region','Region','txt'],['notes','Notes','area']];
 function openD(id){
- cur=id?S.dealers.find(d=>d.id===id):null;const d=cur||{region:F.r||'',branch:'',screens:0,a0:0,nline:0,bb:null,reg:'Not contacted',poster:'Not started',billboard:'Not started',screensSt:'Not set up',nlineSt:'Not checked',proofs:[],log:[]};
+ cur=id?S.dealers.find(d=>d.id===id):null;const d=cur||{region:F.r||'',branch:'',screens:0,a0:0,nline:0,reg:'Pending',a0Type:'',bbHas:'',tvSt:'No action yet',nlVeh:'',owner:'',lastContact:'',proofs:[],log:[]};
  $('#dt').textContent=cur?d.branch:'New dealer';$('#dsub').textContent=cur?`${d.region} · ${(d.proofs||[]).length} proofs · last follow-up ${d.lastContact?fmtD(d.lastContact):'none yet'}`:'Add a dealership to the register';
  $('#fields').innerHTML=FIELDS.map(([k,l,t,L])=>{if(k==='h')return`<h3>${l}</h3>`;const v=d[k]??'';
   const inp=t==='sel'?`<select name="${k}">${opts(L,v)}</select>`:t==='area'?`<textarea name="${k}">${esc(v)}</textarea>`:`<input name="${k}" type="${t==='num'?'number':t==='date'?'date':'text'}" ${t==='num'?'min="0"':''} value="${esc(v)}">`;
@@ -365,7 +396,7 @@ $('#cancel').addEventListener('click',closeD);
 $('#dlg').addEventListener('cancel',()=>{dialogOpen=false;if(pending)touch()});
 $('#df').addEventListener('submit',e=>{e.preventDefault();const fd=new FormData($('#df'));
  const d=cur||{id:'d'+Date.now().toString(36),log:[],proofs:[]};
- for(const[k,,t]of FIELDS){if(k==='h')continue;let v=fd.get(k);if(t==='num')v=v===''?(['screens','a0','nline'].includes(k)?0:null):+v;d[k]=v}
+ for(const[k,,t]of FIELDS){if(k==='h')continue;let v=fd.get(k);if(t==='num')v=v===''?(['screens','a0','nline'].includes(k)?0:null):+v;else if(typeof v==='string')v=v.trim();if(k==='owner'&&v!==d.owner)d.ownerSet=true;d[k]=v}
  if(!d.branch.trim()){toast('Give the dealer a name first');return}
  const pend=$('#ln').value.trim();if(pend)$('#fields')._log.unshift({d:today(),t:pend});
  d.log=$('#fields')._log;if(!cur){S.dealers.push(d)}
@@ -383,7 +414,7 @@ $('#kf').addEventListener('submit',async e=>{e.preventDefault();const f=e.target
   const x=await api(DATA()).catch(()=>null);if(x){gsha=x.sha;const r2=JSON.parse(unb64(x.content));S=migrate(r2);base=r2.updated||'';all()}let l=null;try{l=JSON.parse(localStorage.getItem('dbat-local')||'null')}catch(z){}if(l&&l.S&&(l.base||'')===base){S=migrate(l.S);all();pending=true;await save();try{localStorage.removeItem('dbat-local')}catch(z){}toast('Connected. Your device changes are now shared with the team.');return}st('Connected · edits save to GitHub');toast('Connected. Your edits now save for everyone.')}
  catch(x){$('#kmsg').textContent='GitHub rejected that key. Check it is correct and not expired.'}});
 /* resizable columns: drag the line at a header's right edge, or focus it and use the arrow keys */
-const COLW=[150,110,52,52,52,64,150,120,150,160,160,150,150,150];
+const COLW=[160,110,62,62,62,140,130,140,200,120,160,160,150];
 let CW=null;try{CW=JSON.parse(localStorage.getItem('dbat-cw')||'null')}catch(e){}
 if(!Array.isArray(CW)||CW.length!==COLW.length)CW=[...COLW];
 const saveW=()=>{try{localStorage.setItem('dbat-cw',JSON.stringify(CW))}catch(e){}};
@@ -415,7 +446,7 @@ $('#dpv').addEventListener('click',()=>{if(cur)openV(cur.id)});
 
 /* proofs */
 const KN=Object.fromEntries(KINDS);
-const AD={tv:['screensSt','tvAd'],a0:['poster','a0Ad'],bb:['billboard','bbAd'],nl:['nlineSt','nlineVeh']};
+const AD={tv:['tvSt','tvAd'],a0:['a0Type','a0Ad'],bb:['bbHas','bbAd'],nl:['nlVeh','']};
 const LOCAL={};
 const rawU=p=>`https://raw.githubusercontent.com/${GH?GH.owner:''}/${GH?GH.repo:''}/HEAD/${GH?GH.pre:''}${p.id.split('/').map(encodeURIComponent).join('/')}`;
 const media=(p,big)=>{const u=LOCAL[p.id]||p.id.split('/').map(encodeURIComponent).join('/');return /^video\//.test(p.ct)?`<video src="${u}" ${big?'controls playsinline':'muted preload="metadata"'}></video>`:/pdf/.test(p.ct)?`<span>${big?`<a href="${u}" style="color:#8fd3ff">Open PDF: ${esc(p.name)}</a>`:'PDF'}</span>`:`<img src="${u}" alt="${esc(p.name)}" loading="lazy" data-raw="${esc(GH?rawU(p):'')}" onerror="if(this.dataset.raw&&this.src!==this.dataset.raw){this.src=this.dataset.raw}else{this.replaceWith(document.createTextNode('Image unavailable'))}">`};
@@ -484,20 +515,22 @@ $('#xl').addEventListener('click',async()=>{
  try{
  const wb=new ExcelJS.Workbook();wb.creator='Hyundai Retail Marketing';
  const ws=wb.addWorksheet('Register',{views:[{state:'frozen',xSplit:2,ySplit:1}]});
- const cols=[['Region',16],['Branch',26],['TV/digital screens',11],['A0 frames',10],['N-Line spaces',10],['Billboards',10],['Billboard type',20],['Billboard size',14],['HQ owner',12],['Dealer contact',20],['Phone',15],['Email',26],['Register status',17],['Last follow-up',14],['TV content',16],['Advert on screens',26],['A0 snapper frames',17],['Advert / KV in A0',26],['Billboard update',17],['Advert on billboard',26],['N-Line vehicle check',17],['Vehicle on N-Line display',24],['Proofs (BB / A0 / NL / TV)',18],['Notes',40],['Engagement log',60]];
+ const cols=[['Region',16],['Branch',26],['TV / digital screens',11],['A0 frames',10],['N-Line spaces',10],['Register status',15],['HQ owner',14],['Last follow-up',14],['A0 poster content',24],['A0 poster detail',26],['Billboard on premises',13],['Billboard type',18],['Billboard size',13],['Advert on billboard',24],['TV content',17],['Advert / TVC on screens',24],['N-Line champion vehicle',18],['Dealer status',14],['Proofs (BB / A0 / NL / TV)',16],['Dealer contact',20],['Phone',15],['Email',26],['Notes',40],['Engagement log',60]];
  ws.columns=cols.map(([h,w])=>({header:h,width:w}));
- const dt=s=>s?new Date(s+'T00:00:00Z'):null,pc=(d,k)=>(d.proofs||[]).filter(p=>p.k===k).length;
- S.dealers.forEach(d=>ws.addRow([d.region,d.branch,d.screens,d.a0,d.nline,d.bb,d.bbType,d.bbSize,d.owner,d.contact,d.phone,d.email,d.reg,dt(d.lastContact),d.screensSt,d.tvAd,d.poster,d.a0Ad,d.billboard,d.bbAd,d.nlineSt,d.nlineVeh,['bb','a0','nl','tv'].map(k=>pc(d,k)).join(' / '),d.notes,(d.log||[]).map(x=>x.d+': '+x.t).join('\n')]));
+ const dt=s=>s?new Date(s+'T00:00:00Z'):null,pc=(d,k)=>(d.proofs||[]).filter(p=>p.k===k).length,HL={g:'All aligned',a:'In progress',r:'Outstanding',none:'Not started'};
+ S.dealers.forEach(d=>ws.addRow([d.region,d.branch,d.screens,d.a0,d.nline,d.reg,d.owner,dt(d.lastContact),d.a0Type,d.a0Ad,d.bbHas,d.bbType,d.bbSize,d.bbAd,d.tvSt,d.tvAd,d.nlVeh,HL[health(d)[0]],['bb','a0','nl','tv'].map(k=>pc(d,k)).join(' / '),d.contact,d.phone,d.email,d.notes,(d.log||[]).map(x=>x.d+': '+x.t).join('\n')]));
  const hr=ws.getRow(1);hr.height=30;hr.eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1B1F25'}};c.alignment={vertical:'middle',wrapText:true}});
- const last=S.dealers.length+101,lists={G:BBT.filter(Boolean),I:OWN.filter(Boolean),M:REG,O:TV,Q:ROLL,S:ROLL,U:NL};
- for(let r=2;r<=last;r++){for(const[c,L]of Object.entries(lists))ws.getCell(c+r).dataValidation={type:'list',allowBlank:true,formulae:['"'+L.join(',')+'"']};
-  const x=ws.getCell('N'+r);x.numFmt='dd mmm yyyy';x.dataValidation={type:'date',operator:'greaterThan',allowBlank:true,formulae:[new Date(Date.UTC(2020,0,1))],showErrorMessage:true,errorTitle:'Date',error:'Enter a date, e.g. 2026-12-03'}}
- ws.autoFilter={from:'A1',to:'Y1'};
- const sm=wb.addWorksheet('Summary');sm.columns=[['Region',18],['Dealers',10],['Registers confirmed',13],['Screens',10],['A0 frames',11],['Billboards',11],['TV content live',13],['A0 posters live',13],['Billboards live',13],['N-Line correct vehicle',15]].map(([h,w])=>({header:h,width:w}));
+ const FILL={g:'FFD9F2E3',a:'FFFBEBC8',r:'FFF8D5CF'};S.dealers.forEach((d,i)=>{const h=health(d)[0];if(FILL[h])ws.getCell('R'+(i+2)).fill={type:'pattern',pattern:'solid',fgColor:{argb:FILL[h]}}});
+ const last=S.dealers.length+101,lists={F:REG,I:A0T.filter(Boolean),K:BBH.filter(Boolean),L:BBT.filter(Boolean),O:TVS,Q:NLV.filter(Boolean)};
+ for(let r=2;r<=last;r++){for(const[c,Ls]of Object.entries(lists))ws.getCell(c+r).dataValidation={type:'list',allowBlank:true,formulae:['"'+Ls.join(',')+'"']};
+  const x=ws.getCell('H'+r);x.numFmt='dd mmm yyyy';x.dataValidation={type:'date',operator:'greaterThan',allowBlank:true,formulae:[new Date(Date.UTC(2020,0,1))],showErrorMessage:true,errorTitle:'Date',error:'Enter a date, e.g. 2026-12-03'}}
+ ws.autoFilter={from:'A1',to:'X1'};
+ const sm=wb.addWorksheet('Summary');sm.columns=[['Region',18],['Dealers',10],['Confirmed',11],['TV screens',11],['A0 frames',11],['N-Line spaces',12],['Dealers with billboard',14],['TV screens content shared',15],['A0 frames on latest KV',15],['N-Line spaces with vehicle',15],['Dealers all aligned',13]].map(([h,w])=>({header:h,width:w}));
  const regs=[...new Set(S.dealers.map(d=>d.region))];const RR='Register!';
- regs.forEach((g,i)=>{const r=i+2,D=S.dealers.filter(d=>d.region===g),s2=k=>D.reduce((a,d)=>a+(+d[k]||0),0),cf=(col,v,f)=>({formula:`COUNTIFS(${RR}A:A,A${r},${RR}${col}:${col},"${v}")`,result:D.filter(d=>d[f]===v).length}),sf=(col,k)=>({formula:`SUMIF(${RR}A:A,A${r},${RR}${col}:${col})`,result:s2(k)});
-  sm.addRow([g,{formula:`COUNTIF(${RR}A:A,A${r})`,result:D.length},cf('M','Confirmed','reg'),sf('C','screens'),sf('D','a0'),sf('F','bb'),cf('O',LIVE,'screensSt'),cf('Q',DONE,'poster'),cf('S',DONE,'billboard'),cf('U','Correct vehicle','nlineSt')])});
- const tr=regs.length+2,tot=['Total'];'BCDEFGHIJ'.split('').forEach(c=>tot.push({formula:`SUM(${c}2:${c}${tr-1})`}));sm.addRow(tot);
+ regs.forEach((g,i)=>{const r=i+2,D=S.dealers.filter(d=>d.region===g),s2=(k,pred)=>D.filter(pred||(()=>true)).reduce((a,d)=>a+(+d[k]||0),0);
+  const cnt=(col,v,pred)=>({formula:`COUNTIFS(${RR}A:A,A${r},${RR}${col}:${col},"${v}")`,result:D.filter(pred).length}),sum=(col,k)=>({formula:`SUMIF(${RR}A:A,A${r},${RR}${col}:${col})`,result:s2(k)}),sumif=(scol,ccol,v,k,pred)=>({formula:`SUMIFS(${RR}${scol}:${scol},${RR}A:A,A${r},${RR}${ccol}:${ccol},"${v}")`,result:s2(k,pred)});
+  sm.addRow([g,{formula:`COUNTIF(${RR}A:A,A${r})`,result:D.length},cnt('F','Confirmed',d=>d.reg==='Confirmed'),sum('C','screens'),sum('D','a0'),sum('E','nline'),cnt('K','Yes',d=>d.bbHas==='Yes'),sumif('C','O','Content shared','screens',d=>d.tvSt==='Content shared'),sumif('D','I',KV,'a0',d=>d.a0Type===KV),sumif('E','Q','?*','nline',d=>!!d.nlVeh),cnt('R','All aligned',d=>health(d)[0]==='g')])});
+ const tr=regs.length+2,tot=['Total'];'BCDEFGHIJK'.split('').forEach(c=>tot.push({formula:`SUM(${c}2:${c}${tr-1})`}));sm.addRow(tot);
  sm.getRow(tr).font={bold:true};
  sm.getRow(1).eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1B1F25'}}});
  sm.addRow([]);sm.addRow(['Deadline',dt(S.settings.deadline)]).getCell(2).numFmt='dd mmm yyyy';sm.addRow(['Exported',new Date().toLocaleString('en-ZA')]);
