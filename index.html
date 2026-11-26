@@ -76,7 +76,7 @@ td:nth-child(-n+2),th:nth-child(-n+2){position:sticky;left:0;background:var(--ca
 td:nth-child(2),th:nth-child(2){left:var(--c0,150px);box-shadow:inset -1px 0 0 var(--g1),6px 0 8px -6px #000}
 tbody tr:hover td:nth-child(-n+2){background:var(--card2)}
 [data-lab]{border-radius:4px}body.editing [data-lab]{outline:1px dashed var(--g2);outline-offset:2px;cursor:text;padding:0 2px}body.editing [data-lab]:focus{outline:1px solid var(--acc);color:var(--ink)}
-body.ro #rows select,body.ro #rows input{cursor:pointer;opacity:.8}.rohint{display:none}body.ro .rohint{display:block}body.ro #add,body.ro #eh,body.ro #drop,body.ro #vdel,body.ro #ok,body.ro #del,body.ro .logadd{display:none!important}
+.rohint{display:none}body.ro .rohint{display:block}
 #eh.on{border-color:var(--acc);color:var(--acc)}
 td select,td input{min-height:34px;font-size:13.5px;padding:0 6px;background:transparent}
 td select{padding-right:4px}
@@ -164,7 +164,7 @@ dialog::backdrop{background:#000000b3;backdrop-filter:blur(3px)}
   <button type="button" id="eh" title="Rename column and section headings">Edit headings</button>
   <label style="display:flex;gap:6px;align-items:center;font-size:14px"><input type="checkbox" id="fod" style="min-height:20px;width:20px"> No follow-up in 14+ days</label>
  </div>
- <p class="rohint note" style="margin:0 0 10px">View only. Click <b>🔑 Connect to edit</b> at the top to change statuses, dates and owners, or to upload proofs.</p>
+ <p class="rohint note" style="margin:0 0 10px">Your changes save on this device. Click <b>🔑 Connect to edit</b> at the top to share them with the team and to upload proofs.</p>
  <div class="scroll"><table id="tbl"><colgroup id="cg"></colgroup><thead><tr>
   <th>Dealer</th><th>Region</th><th class="n" title="TV / digital screens">TV</th><th class="n" title="A0 clip-on poster frames">A0</th><th class="n" title="N-Line branded display spaces">NL</th><th class="n" title="Billboards on premises">BB</th><th>Register</th><th>HQ owner</th><th>Last follow-up</th><th>A0 posters</th><th>Billboard update</th><th>TV content</th><th>N-Line vehicle</th><th>Proofs</th>
  </tr></thead><tbody id="rows"></tbody></table></div>
@@ -188,8 +188,8 @@ dialog::backdrop{background:#000000b3;backdrop-filter:blur(3px)}
 <dialog id="kd"><form id="kf">
  <div class="dh"><h2>Connect to edit</h2><p>Anyone with the link can view. To save changes and upload proofs, add a GitHub access key. It stays on this device only.</p></div>
  <div class="form">
-  <label class="full">Your name (shown on saves)<input name="uname" autocomplete="name" required></label>
-  <label class="full">GitHub fine-grained token (Contents: read and write, this repo only)<input name="token" type="password" autocomplete="off" required></label>
+  <label class="full">Your name (shown on saves)<input name="uname" autocomplete="off" data-lpignore="true" data-1p-ignore required></label>
+  <label class="full">GitHub access key (fine-grained token: Contents read and write, this repo only)<input name="token" type="text" autocomplete="off" spellcheck="false" data-lpignore="true" data-1p-ignore style="-webkit-text-security:disc" required></label>
   <p class="note full" id="kmsg" style="margin:0"></p>
  </div>
  <div class="df"><button type="button" id="kout">Disconnect this device</button><span style="display:flex;gap:10px"><button type="button" id="kc">Cancel</button><button class="pri" type="submit">Connect</button></span></div>
@@ -305,7 +305,7 @@ async function api(path,opt={},abs){const r=await fetch(abs||`https://api.github
  headers:Object.assign({Accept:'application/vnd.github+json'},KEY&&KEY.token?{Authorization:'Bearer '+KEY.token}:{},opt.body?{'Content-Type':'application/json'}:{})});
  if(!r.ok){const er=new Error('GitHub '+r.status);er.status=r.status;throw er}return r.status===204?null:r.json()}
 const DATA=()=>GH.pre+'data/state.json';
-function touch(){pending=true;if(!canEdit()){st(GH?'View only: connect your access key to save':'Preview: open the GitHub Pages link to save');return}st('Unsaved changes…');clearTimeout(timer);timer=setTimeout(save,1500)}
+function touch(){pending=true;if(!canEdit()){S.updated=new Date().toISOString();try{localStorage.setItem('dbat-local',JSON.stringify({base,S}))}catch(e){}pending=false;st(GH?'Saved on this device · 🔑 Connect to share with the team':'Saved on this device');list();return}st('Unsaved changes…');clearTimeout(timer);timer=setTimeout(save,1500)}
 async function save(){
  if($('#dlg').open||$('#vw').open||!canEdit())return;
  pending=false;st('Saving…');
@@ -321,19 +321,18 @@ function applyRO(){const ro=!canEdit();document.body.classList.toggle('ro',ro);$
 (async()=>{applyRO();if(!GH){st('Preview: open the GitHub Pages link to save');return}
  st('Loading latest…');
  try{let r=null;if(canEdit()){const j=await api(DATA());gsha=j.sha;r=JSON.parse(unb64(j.content))}else{const x=await fetch('data/state.json?t='+Date.now(),{cache:'no-store'});if(x.ok)r=await x.json()}
-  if(r){S=migrate(r);base=r.updated||'';all()}}
+  if(r){S=migrate(r);base=r.updated||'';all()}
+  if(!canEdit()){try{const l=JSON.parse(localStorage.getItem('dbat-local')||'null');if(l&&l.S&&(l.base||'')===base){S=migrate(l.S);all();st('Showing your device-only changes · 🔑 Connect to share')}}catch(e){}}}
  catch(er){if(er.status===401)toast('Your access key was rejected. Reconnect with 🔑')}
  st(canEdit()?(S.updated?'Up to date':'Connected'):'View only · 🔑 Connect to edit')})();
 
 
 /* table edits */
-$('#rows').addEventListener('change',e=>{const el=e.target,f=el.dataset.f;if(!f)return;if(!canEdit()){list();toast('Connect with 🔑 to make changes');return}const tr=el.closest('tr'),d=S.dealers.find(x=>x.id===tr.dataset.id);
+$('#rows').addEventListener('change',e=>{const el=e.target,f=el.dataset.f;if(!f)return;const tr=el.closest('tr'),d=S.dealers.find(x=>x.id===tr.dataset.id);
  d[f]=f==='bb'?(el.value===''?null:+el.value):el.value;
  if(f==='reg'&&['Contacted','Awaiting reply','Confirmed'].includes(el.value))d.lastContact=today();
  d.log.unshift({d:today(),t:`${({reg:'Register',poster:'A0 posters',billboard:'Billboard',owner:'Owner',lastContact:'Followed up',bb:'Billboards',screensSt:'TV content',nlineSt:'N-Line vehicle'})[f]} → ${el.value||'cleared'}`});
  tr.outerHTML=row(d);summary();touch()});
-$('#rows').addEventListener('mousedown',e=>{if(canEdit()||!e.target.closest('select,input'))return;e.preventDefault();e.target.blur();if(!GH){toast('Open the GitHub Pages link to edit');return}toast('Connect your access key to edit');$('#key').click()});
-$('#rows').addEventListener('keydown',e=>{if(!canEdit()&&e.target.closest('select,input')&&!['Tab','Shift'].includes(e.key)){e.preventDefault();$('#key').click()}});
 $('#rows').addEventListener('click',e=>{const tr=e.target.closest('tr');if(!tr)return;if(e.target.closest('[data-open]'))openD(tr.dataset.id);if(e.target.closest('[data-pv]'))openV(tr.dataset.id)});
 $('#regions').addEventListener('click',e=>{const r=e.target.closest('.reg');if(!r)return;F.r=F.r===r.dataset.r?'':r.dataset.r;saveF();filters();list();$('#tbl').scrollIntoView({behavior:'smooth'})});
 [['#q','q','input'],['#fr','r','change'],['#fs','s','change'],['#fo','o','change']].forEach(([s,k,ev])=>$(s).addEventListener(ev,e=>{F[k]=e.target.value;saveF();list()}));
@@ -356,7 +355,7 @@ function openD(id){
  $('#fields').insertAdjacentHTML('beforeend',`<div class="log"><h3 style="margin:10px 0 0;font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.1em">Proof of execution</h3><div class="ptiles" id="ptiles"></div></div>`);
  $('#fields')._log=[...(d.log||[])];ptiles(cur);
  delArm=false;$('#del').textContent='Delete dealer';$('#del').style.display=cur?'':'none';$('#dpv').style.display=cur?'':'none';
- $('#fields').querySelectorAll('input,select,textarea').forEach(x=>x.disabled=!canEdit());$('#dlg').showModal();
+ dialogOpen=true;$('#dlg').showModal();
 }
 $('#fields').addEventListener('click',e=>{if(e.target.id!=='la')return;const i=$('#ln');if(!i.value.trim())return;$('#fields')._log.unshift({d:today(),t:i.value.trim()});
  $('#ll').innerHTML=$('#fields')._log.map(x=>`<li><b>${esc(fmtD(x.d))}</b>${esc(x.t)}</li>`).join('');i.value=''});
@@ -381,7 +380,7 @@ $('#kf').addEventListener('submit',async e=>{e.preventDefault();const f=e.target
  try{const r=await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}`,{headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+k.token},cache:'no-store'});
   if(!r.ok)throw 0;const j=await r.json();if(!(j.permissions&&j.permissions.push)){$('#kmsg').textContent='That key can read but not write. Give it Contents: read and write on this repo.';return}
   KEY=k;try{localStorage.setItem('dbat-gh',JSON.stringify(k))}catch(x){}$('#kd').close();applyRO();list();
-  const x=await api(DATA()).catch(()=>null);if(x){gsha=x.sha;const r2=JSON.parse(unb64(x.content));S=migrate(r2);base=r2.updated||'';all()}st('Connected · edits save to GitHub');toast('Connected. Your edits now save for everyone.')}
+  const x=await api(DATA()).catch(()=>null);if(x){gsha=x.sha;const r2=JSON.parse(unb64(x.content));S=migrate(r2);base=r2.updated||'';all()}let l=null;try{l=JSON.parse(localStorage.getItem('dbat-local')||'null')}catch(z){}if(l&&l.S&&(l.base||'')===base){S=migrate(l.S);all();pending=true;await save();try{localStorage.removeItem('dbat-local')}catch(z){}toast('Connected. Your device changes are now shared with the team.');return}st('Connected · edits save to GitHub');toast('Connected. Your edits now save for everyone.')}
  catch(x){$('#kmsg').textContent='GitHub rejected that key. Check it is correct and not expired.'}});
 /* resizable columns: drag the line at a header's right edge, or focus it and use the arrow keys */
 const COLW=[150,110,52,52,52,64,150,120,150,160,160,150,150,150];
@@ -404,7 +403,7 @@ function applyLabels(){document.querySelectorAll('[data-lab]').forEach(e=>{if(do
 function setEdit(on){editMode=on;document.body.classList.toggle('editing',on);$('#eh').classList.toggle('on',on);$('#eh').textContent=on?'Done editing':'Edit headings';
  document.querySelectorAll('[data-lab]').forEach(e=>{if(on){e.setAttribute('contenteditable','true');e.spellcheck=false}else e.removeAttribute('contenteditable')});
  if(on)toast('Click any dashed heading to rename it. Clear it to restore the original.')}
-$('#eh').addEventListener('click',()=>{if(!canEdit()){toast('Connect with 🔑 to rename headings');return}setEdit(!editMode)});
+$('#eh').addEventListener('click',()=>setEdit(!editMode));
 document.addEventListener('keydown',e=>{const el=e.target.closest&&e.target.closest('[data-lab][contenteditable]');if(!el)return;
  if(e.key==='Enter'){e.preventDefault();el.blur()}if(e.key==='Escape'){el.textContent=lab(el.dataset.lab,el.dataset.def);el.blur()}});
 document.addEventListener('focusout',e=>{const el=e.target.closest&&e.target.closest('[data-lab][contenteditable]');if(!el)return;
@@ -435,7 +434,7 @@ function renderV(){const d=S.dealers.find(x=>x.id===V.id);if(!d)return;const P=d
  const [sf,af]=AD[V.k];
  $('#vcap').innerHTML=`<b>${esc(KN[V.k])}:</b> ${esc(d[sf]||'')}${d[af]?` · <b>${V.k==='nl'?'Vehicle':'Advert'}:</b> ${esc(d[af])}`:''}${p?` · uploaded ${esc(fmtD(p.d))} · ${esc(p.name)} · ${V.i+1} of ${P.length}`:''}`;
  $('#vthumbs').innerHTML=P.map((x,i)=>`<button type="button" data-i="${i}" class="${i===V.i?'on':''}" aria-label="Proof ${i+1}">${media(x)}</button>`).join('');
- $('#drop').style.display=canEdit()?'':'none';$('#vdel').style.display=canEdit()&&p?'':'none';vdelArm=false;$('#vdel').textContent='Delete this proof';
+ $('#drop').style.display=GH?'':'none';$('#vdel').style.display=canEdit()&&p?'':'none';vdelArm=false;$('#vdel').textContent='Delete this proof';
  $('#dmsg').textContent=`Drop ${KN[V.k]} photos or a short video here`;
  $('#vprev').disabled=V.i<=0;$('#vnext').disabled=V.i>=P.length-1}
 $('#vtabs').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;V.k=b.dataset.k;V.i=1e9;renderV()});
@@ -451,7 +450,7 @@ async function shrink(f){if(!/^image\/(jpeg|png|webp|gif)$/.test(f.type)&&/^imag
  try{const b=await createImageBitmap(f),s=Math.min(1,2000/Math.max(b.width,b.height)),c=document.createElement('canvas');c.width=Math.round(b.width*s);c.height=Math.round(b.height*s);c.getContext('2d').drawImage(b,0,0,c.width,c.height);
   return await new Promise(r=>c.toBlob(x=>r(x||f),'image/jpeg',.85))}catch(e){return f}}
 const toB64=b=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(',')[1]);r.onerror=no;r.readAsDataURL(b)});
-async function upload(files){if(!canEdit()){toast('Connect with 🔑 to upload proofs');return}
+async function upload(files){if(!canEdit()){toast('Proof photos are stored on GitHub. Connect your access key first.');$('#key').click();return}
  const d=S.dealers.find(x=>x.id===V.id);let n=0;files=[...files];
  for(const f of files){n++;$('#dmsg').textContent=`Uploading ${n} of ${files.length}…`;
   try{if(!/^(image\/(jpeg|png|webp|gif)|video\/(mp4|webm)|application\/pdf)$/.test(f.type)){toast(`${f.name}: use JPG, PNG, WebP, MP4 or PDF`);continue}
