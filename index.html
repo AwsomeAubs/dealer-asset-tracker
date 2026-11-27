@@ -155,6 +155,17 @@ dialog::backdrop{background:#050b16cc}
 .dh{background:linear-gradient(90deg,#2a66c9,#3b7ae0);border-radius:20px 20px 0 0;border-bottom:0}.dh p{color:#dbe7ff}
 .df{background:transparent}
 .hleg,.legend,.note,#foot{color:#9fb0c8}
+
+.vbar{position:sticky;top:0;z-index:20;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 16px;background:linear-gradient(90deg,#2a66c9,#3b7ae0);color:#fff;font-weight:600}
+body.viewing #rows input,body.viewing #rows select{pointer-events:none;opacity:.85}body.viewing #add,body.viewing #eh,body.viewing #closem,body.viewing #catb,body.viewing #drop,body.viewing #vdel,body.viewing #ok,body.viewing #del,body.viewing .logadd{display:none!important}
+.ah{margin:12px 0 0;font-size:11px;font-weight:600;color:#a9bdd8;text-transform:uppercase;letter-spacing:.1em}
+.agrp{margin:10px 0;border:1px solid #34507a;border-radius:14px;padding:8px 10px;background:#ffffff06}.agh{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:6px}.agh span{color:var(--mut)}
+.arow{display:grid;grid-template-columns:96px minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr) 70px;gap:8px;align-items:center;padding:4px 0}
+.arow input,.arow select{min-height:36px;font-size:13.5px}.aid{font-size:12px;color:#a9bdd8;font-variant-numeric:tabular-nums}.aseen{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--mut)}.aseen input{min-height:18px;width:18px}
+.arow select.c-g{background:#34c27a24;border-color:#2e7d55;color:#c3f0d6}.arow select.c-a{background:#d9a4412a;border-color:#8a6d2f;color:#f5d798}
+.pf.aud.c-g{border-color:#2e7d55;color:#c3f0d6;background:#34c27a1f}.pf.aud.c-a{border-color:#8a6d2f;color:#f5d798;background:#d9a4411f}
+.ht td,.ht th{white-space:nowrap}.ht tr.hl td{background:#ffffff08}.tag{font-size:11px;padding:2px 8px;border-radius:99px;background:#1a8cff33;color:#bcdcff;margin-left:6px}
+@media(max-width:700px){.arow{grid-template-columns:80px minmax(0,1fr) 60px}.arow .aloc,.arow .adet{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -172,11 +183,13 @@ dialog::backdrop{background:#050b16cc}
   <button id="add" type="button">Add dealer</button>
   <button id="pw" type="button">Proof preview</button>
   <button id="key" type="button">🔑 Connect to edit</button>
+  <button id="mon" type="button">📅 Month</button>
   <label class="dlset">Deadline <input type="date" id="deadline"></label>
   <span class="save" id="save">Loading…</span>
  </div>
 </div></header>
 
+<div id="vbar" class="vbar" hidden><span id="vbarT"></span><button type="button" class="pri" id="vback">Back to live month</button></div>
 <main class="band"><div class="wrap">
  <div class="two">
   <section class="panel">
@@ -190,6 +203,13 @@ dialog::backdrop{background:#050b16cc}
   </section>
  </div>
 
+
+ <section class="panel" style="margin-top:16px" id="history">
+  <h2><span data-lab="h-hist">Monthly history</span> · <span id="mlab"></span></h2>
+  <div class="actions" style="margin:0 0 14px"><button type="button" id="catb">Content list for this month</button><button type="button" class="pri" id="closem">Close month</button></div>
+  <div id="hist"></div>
+  <p class="note">Closing a month saves a frozen copy of every dealer, asset, status and proof list, then starts the next month with everything carried over, so you only update what changed. Archived months open read-only.</p>
+ </section>
  <section class="panel" style="margin-top:16px" id="proofwall">
   <h2><span data-lab="h-proof">Proof of execution</span> <span id="pcount"></span></h2>
   <div class="chips" id="chips"></div>
@@ -210,7 +230,7 @@ dialog::backdrop{background:#050b16cc}
  <div class="hleg"><span><i style="background:#34c27a"></i>All items aligned</span><span><i style="background:#d9a441"></i>Briefed, some items open</span><span><i style="background:#df6150"></i>Outstanding, no follow-up in 14+ days</span><span><i style="background:#3a3f47"></i>Not started</span></div>
  <p class="rohint note" style="margin:0 0 10px">Your changes save on this device. Click <b>🔑 Connect to edit</b> at the top to share them with the team and to upload proofs.</p>
  <div class="scroll"><table id="tbl"><colgroup id="cg"></colgroup><thead><tr>
-  <th>Dealer</th><th>Region</th><th class="n" title="TV / digital screens (edit the count)">TV</th><th class="n" title="A0 clip-on poster frames (edit the count)">A0</th><th class="n" title="N-Line branded display spaces (edit the count)">NL</th><th>Register</th><th>HQ owner</th><th>Last follow-up</th><th>A0 posters</th><th>Billboard</th><th>TV content</th><th>N-Line vehicle</th><th>Proofs</th>
+  <th>Dealer</th><th>Region</th><th class="n" title="TV / digital screens (edit the count)">TV</th><th class="n" title="A0 clip-on poster frames (edit the count)">A0</th><th class="n" title="N-Line branded display spaces (edit the count)">NL</th><th>Register</th><th>HQ owner</th><th>Last follow-up</th><th>A0 posters</th><th>Billboard</th><th>TV content</th><th>N-Line vehicle</th><th>Asset audit</th><th>Proofs</th>
  </tr></thead><tbody id="rows"></tbody></table></div>
  <p class="note" id="foot"></p>
 </div></main>
@@ -229,6 +249,16 @@ dialog::backdrop{background:#050b16cc}
  <div class="drop" id="drop"><span id="dmsg">Drop photos or a short video here</span><label>Choose files<input type="file" id="vf" multiple accept="image/*,video/mp4,video/webm,application/pdf" hidden></label></div>
  <div class="df"><button type="button" id="vdel">Delete this proof</button><span style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" id="vprev" aria-label="Previous">‹ Prev</button><button type="button" id="vnext" aria-label="Next">Next ›</button><button class="pri" type="button" id="vclose">Done</button></span></div>
 </dialog>
+<dialog id="catd"><form id="catf">
+ <div class="dh"><h2>Content list for this month</h2><p>Everyone picks from these lists when auditing. One item per line. Put the current campaign item first: it counts as done.</p></div>
+ <div class="form">
+  <label class="full">Campaign name<input name="campaign" autocomplete="off"></label>
+  <label class="full">TV / digital screen content<textarea name="tv" rows="6"></textarea></label>
+  <label class="full">A0 poster content<textarea name="a0" rows="6"></textarea></label>
+  <label class="full">N-Line champion vehicles<textarea name="nl" rows="6"></textarea></label>
+ </div>
+ <div class="df"><span></span><span style="display:flex;gap:10px"><button type="button" id="catc">Cancel</button><button class="pri" type="submit">Save list</button></span></div>
+</form></dialog>
 <dialog id="kd"><form id="kf">
  <div class="dh"><h2>Connect to edit</h2><p>Anyone with the link can view. To save changes and upload proofs, add a GitHub access key. It stays on this device only.</p></div>
  <div class="form">
@@ -248,14 +278,14 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const G='#34c27a',A='#d9a441',RD='#df6150',GR='#3a3f47',DK='#26292e',MID='#7a828d';
 const REG=['Pending','Briefed','Contacted','Awaiting reply','Confirmed'];
 const REGC={'Pending':GR,'Briefed':A,'Contacted':MID,'Awaiting reply':'#b08a3e','Confirmed':G};
-const A0T=['','Latest campaign KV / TVC','Model / product poster','Monthly specials & offers','New model launch','Service & parts offer','Other'];
-const KV=A0T[1];
+let A0T=['','Latest campaign KV / TVC','Model / product poster','Monthly specials & offers','New model launch','Service & parts offer','Other'];
+let KV=A0T[1];
 const BBH=['','Yes','No','In progress','No plan'];
 const BBC={'Yes':G,'In progress':A,'No':MID,'No plan':DK,'':GR};
 const LOADED='Content loaded on screen';
 const TVS=['No action yet','Briefed – pending','Content shared',LOADED,'No screen'];
 const TVSC={'No action yet':GR,'Briefed – pending':A,'Content shared':'#e0b964',[LOADED]:G,'No screen':DK};
-const NLV=['','Venue N Line','Creta N Line','Tucson N Line','Grand i10','i20','Venue','Creta','Tucson','Alcazar','Santa Fe','Palisade','Staria','Other'];
+let NLV=['','Venue N Line','Creta N Line','Tucson N Line','Grand i10','i20','Venue','Creta','Tucson','Alcazar','Santa Fe','Palisade','Staria','Other'];
 const KINDS=[['bb','Billboard'],['a0','A0 snapper frame'],['nl','N-Line display'],['tv','TV / digital screen']];
 const BBT=['','Pylon / totem','Wall-mounted static','Rooftop static','Freestanding static','LED digital'];
 let S=JSON.parse($('#state').textContent);
@@ -270,9 +300,35 @@ function migrate(s){
   if(d.bbHas===undefined)d.bbHas=d.bb>0?'Yes':d.bb===0?'No':'';
   if(d.tvSt===undefined)d.tvSt=['Uploaded & live','Running'].includes(d.screensSt)?LOADED:['Downloaded','Content sent'].includes(d.screensSt)?'Content shared':d.screensSt==='No screen'?'No screen':'No action yet';
   if(d.nlVeh===undefined)d.nlVeh=NLV.includes(d.nlineVeh)?d.nlineVeh:'';
-  d.proofs=d.proofs||[];d.log=d.log||[];for(const k of['tvAd','a0Ad','bbAd','owner','lastContact'])d[k]=d[k]||'';
- }return s}
+  d.proofs=d.proofs||[];d.log=d.log||[];for(const k of['tvAd','a0Ad','bbAd','owner','lastContact'])d[k]=d[k]||'';d.assets=d.assets||{};
+ }
+ s.month=s.month||new Date().toISOString().slice(0,7);s.history=s.history||[];s.settings=s.settings||{};return s}
 migrate(S);
+/* ===== monthly asset audit, content catalogue and archive ===== */
+const CAT_DEFAULT={campaign:'Progress. Driven by Hyundai',
+ tv:['Progress. Driven by Hyundai – campaign TVC','Model TVC (current range)','Monthly offers loop','Service & parts content','Old / previous campaign','TV channel / non-Hyundai','Screen off / faulty','Other'],
+ a0:['Latest campaign KV / TVC','Model / product poster','Monthly specials & offers','New model launch','Service & parts offer','Old / previous campaign','Empty frame','Other'],
+ nl:['Venue N Line','Creta N Line','Tucson N Line','Grand i10','i20','Venue','Creta','Tucson','Alcazar','Santa Fe','Palisade','Staria','Empty stand','Other']};
+const cat=()=>{if(!S.settings.catalog||!S.settings.catalog.tv)applyCatalog();return S.settings.catalog};
+function applyCatalog(){S.settings.catalog=Object.assign({},CAT_DEFAULT,S.settings.catalog||{});A0T=['',...cat().a0];KV=A0T[1];NLV=['',...cat().nl]}
+const curMonth=()=>new Date().toISOString().slice(0,7);
+const mLabel=m=>m?new Date(m+'-01T00:00').toLocaleDateString('en-ZA',{month:'long',year:'numeric'}):'';
+const nextM=m=>{const [y,mo]=m.split('-').map(Number);return mo===12?`${y+1}-01`:`${y}-${String(mo+1).padStart(2,'0')}`};
+const KIND3=[['tv','TV','screens','TV / digital screens'],['a0','A0','a0','A0 snapper frames'],['nl','NL','nline','N-Line stands']];
+const code=d=>(d.branch.replace(/^Hyundai\s+/i,'').replace(/[^A-Za-z]/g,'').slice(0,3)||'DLR').toUpperCase();
+function ensureAssets(d){d.assets=d.assets||{};for(const [k,,f] of KIND3){const a=d.assets[k]=d.assets[k]||[];const n=+d[f]||0;while(a.length<n)a.push({loc:'',c:'',det:'',m:''})}return d.assets}
+function audit(d){ensureAssets(d);const r={};for(const [k,,f] of KIND3){const n=+d[f]||0,A=d.assets[k].slice(0,n);r[k]={n,seen:A.filter(x=>x.m===S.month).length,set:A.filter(x=>x.c).length,A}}return r}
+const auditCls=a=>{const n=a.tv.n+a.a0.n+a.nl.n,s=a.tv.seen+a.a0.seen+a.nl.seen;return !n?'':s>=n?'c-g':s?'c-a':''};
+function syncFromAssets(d){const a=audit(d);
+ const nl=a.nl.A.find(x=>x.c&&x.c!=='Empty stand');if(a.nl.n&&nl&&cat().nl.includes(nl.c))d.nlVeh=nl.c;
+ if(a.a0.n&&a.a0.set===a.a0.n){const cnt={};a.a0.A.forEach(x=>cnt[x.c]=(cnt[x.c]||0)+1);d.a0Type=cnt[KV]===a.a0.n?KV:(Object.entries(cnt).filter(x=>x[0]!==KV).sort((x,y)=>y[1]-x[1])[0]||[''])[0]}
+ if(a.tv.n&&a.tv.seen===a.tv.n&&a.tv.A.every(x=>x.c===cat().tv[0]))d.tvSt=LOADED}
+function auditHTML(d){if(!d.id)return '';const a=audit(d),cd=code(d);
+ return `<div class="log" id="audit"><h3 class="ah">Asset audit · ${esc(mLabel(S.month))}</h3><p class="note" style="margin:2px 0 8px">What is showing on each screen, frame and stand right now. Picking content ticks it as seen this month. Change the counts above to add or remove lines.</p>`+
+ KIND3.map(([k,ab,f,title])=>{const n=a[k].n;if(!n)return '';const L=k==='tv'?cat().tv:k==='a0'?cat().a0:cat().nl;
+  return `<div class="agrp"><div class="agh"><b>${title}</b><span>${a[k].seen} of ${n} seen this month</span></div>`+a[k].A.map((x,i)=>`<div class="arow" data-k="${k}" data-i="${i}"><span class="aid">${cd}-${ab}-${String(i+1).padStart(2,'0')}</span><input class="aloc" placeholder="Location, e.g. showroom entrance" value="${esc(x.loc)}"><select class="ac ${x.c?(x.c===L[0]?'c-g':'c-a'):''}">${opts(['',...L],x.c)}</select><input class="adet" placeholder="Detail, e.g. Creta N Line, Dec offer" value="${esc(x.det)}"><label class="aseen"><input type="checkbox" ${x.m===S.month?'checked':''}> Seen</label></div>`).join('')+`</div>`}).join('')+
+ (a.tv.n+a.a0.n+a.nl.n?'':'<p class="empty">Add TV, A0 or N-Line counts above, then save and reopen to audit each one.</p>')+`</div>`}
+applyCatalog();
 const today=()=>new Date().toISOString().slice(0,10);
 const ago=n=>new Date(Date.now()-n*864e5).toISOString().slice(0,10);
 /* each dealer's checklist: TV content shared, A0 on latest KV, billboard decided, N-Line vehicle set, register confirmed */
@@ -320,7 +376,7 @@ function summary(){
  const nlSet=nlTop.reduce((a,x)=>a+x[1],0);
  $('#donuts').innerHTML=[
   ring('Dealer registers','reg',REG.slice().reverse().map(s=>[s,D.filter(d=>d.reg===s).length,REGC[s],s==='Confirmed'?1:s==='Pending'?0:.5]),n,conf),
-  ring('A0 snapper frames','a0',[['Latest campaign KV',w('a0',d=>d.a0Type===KV),G,1],['Other poster content',w('a0',d=>d.a0Type&&d.a0Type!==KV),A,.5],['Not set',w('a0',d=>!d.a0Type),GR,0]],a0,w('a0',d=>d.a0Type===KV)),
+  (()=>{let kv=0,oth=0;D.forEach(d=>{const x=audit(d).a0;if(x.A.some(z=>z.c)){kv+=x.A.filter(z=>z.c===KV).length;oth+=x.A.filter(z=>z.c&&z.c!==KV).length}else if(d.a0Type===KV)kv+=x.n;else if(d.a0Type)oth+=x.n});return ring('A0 snapper frames','a0',[['Latest campaign KV',kv,G,1],['Other poster content',oth,A,.5],['Not set',Math.max(0,a0-kv-oth),GR,0]],a0,kv)})(),
   ring('Billboards','bb',[['Has billboard',D.filter(d=>d.bbHas==='Yes').length,G,1],['No billboard',D.filter(d=>d.bbHas==='No').length,'#2a9d64',1],['No plan',D.filter(d=>d.bbHas==='No plan').length,'#22804f',1],['In progress',D.filter(d=>d.bbHas==='In progress').length,A,.5],['Not checked',D.filter(d=>!d.bbHas).length,GR,0]],n,0,`${D.filter(d=>d.bbHas==='Yes').length} dealers have a billboard on premises`),
   ring('TV / digital screens','tv',[['Content loaded on screen',w('screens',d=>d.tvSt===LOADED),G,1],['Content shared',w('screens',d=>d.tvSt==='Content shared'),'#e0b964',.5],['Briefed – pending',w('screens',d=>d.tvSt==='Briefed – pending'),A,.5],['No action yet',w('screens',d=>d.tvSt==='No action yet'),GR,0],['No screen',w('screens',d=>d.tvSt==='No screen'),DK,1]],tv,w('screens',d=>d.tvSt===LOADED)),
   ring('N-Line stands','nl',[...nlTop.slice(0,3).map(([v,c],i)=>[v,c,[G,'#2a9d64','#22804f'][i],1]),...(nlTop.length>3?[['Other vehicles',nlTop.slice(3).reduce((a,x)=>a+x[1],0),'#1d6b43',1]]:[]),['No vehicle set',nl-nlSet,GR,0]],nl,nlSet,'Champion vehicle on display this month')
@@ -347,12 +403,13 @@ function row(d){const [h,ht]=health(d),od=overdue(d);
  <td><select data-f="bbHas" class="${cc('bbHas',d)}">${opts(BBH,d.bbHas)}</select></td>
  <td><select data-f="tvSt" class="${cc('tvSt',d)}">${opts(TVS,d.tvSt)}</select></td>
  <td><select data-f="nlVeh" class="${cc('nlVeh',d)}">${opts(NLV,d.nlVeh)}</select></td>
+ <td>${(()=>{const a=audit(d),n=a.tv.n+a.a0.n+a.nl.n;return n?`<button type="button" class="pf aud ${auditCls(a)}" data-aud title="Seen this month">TV ${a.tv.seen}/${a.tv.n} · A0 ${a.a0.seen}/${a.a0.n} · NL ${a.nl.seen}/${a.nl.n}</button>`:'<span class="empty">No assets</span>'})()}</td>
  <td><button type="button" class="pf ${(d.proofs||[]).length?'has':''}" data-pv>${(d.proofs||[]).length?`Preview proofs (${(d.proofs||[]).length})`:'Add proof'}</button></td></tr>`;
 }
 function list(){
  const q=F.q.toLowerCase();
  const L=S.dealers.filter(d=>(!F.r||d.region===F.r)&&(!F.s||d.reg===F.s)&&(!F.o||d.owner===F.o)&&(!F.h||health(d)[0]===F.h)&&(!F.od||overdue(d))&&(!q||[d.branch,d.contact,d.notes,d.email,d.owner,d.nlVeh,d.a0Ad].join(' ').toLowerCase().includes(q)));
- $('#rows').innerHTML=L.length?L.map(row).join(''):'<tr><td colspan="13" class="empty">No dealers match these filters.</td></tr>';
+ $('#rows').innerHTML=L.length?L.map(row).join(''):'<tr><td colspan="14" class="empty">No dealers match these filters.</td></tr>';
  $('#ownlist').innerHTML=owners().map(o=>`<option value="${esc(o)}">`).join('');
  $('#foot').textContent=`Showing ${L.length} of ${S.dealers.length} dealers. Edit the TV, A0 and NL counts straight in the table; the charts update as you type. Click a dealer name for contacts, poster details, billboard details, proofs and the engagement log.${S.updated?' Last saved '+new Date(S.updated).toLocaleString('en-ZA',{dateStyle:'medium',timeStyle:'short'})+(S.updatedBy?' by '+S.updatedBy:'')+'.':''}`;
 }
@@ -364,7 +421,7 @@ function filters(){
  $('#fh').innerHTML=[['','Any dealer status'],['g','All items aligned'],['a','Briefed, some items open'],['r','Outstanding, 14+ days'],['none','Not started']].map(([v,l])=>`<option value="${v}"${v===F.h?' selected':''}>${l}</option>`).join('');
  $('#q').value=F.q;$('#fod').checked=F.od;$('#deadline').value=S.settings.deadline;
 }
-function all(){summary();filters();list();wall()}
+function all(){applyCatalog();summary();filters();list();wall();historyRender()}
 
 /* saving: the GitHub repo is the shared store (data/state.json + proofs/) */
 let timer=null,pending=false,dialogOpen=false,base=S.updated||'',gsha=null;
@@ -379,9 +436,9 @@ async function api(path,opt={},abs){const r=await fetch(abs||`https://api.github
  headers:Object.assign({Accept:'application/vnd.github+json'},KEY&&KEY.token?{Authorization:'Bearer '+KEY.token}:{},opt.body?{'Content-Type':'application/json'}:{})});
  if(!r.ok){const er=new Error('GitHub '+r.status);er.status=r.status;throw er}return r.status===204?null:r.json()}
 const DATA=()=>GH.pre+'data/state.json';
-function touch(){pending=true;if(!canEdit()){S.updated=new Date().toISOString();try{localStorage.setItem('dbat-local',JSON.stringify({base,S}))}catch(e){}pending=false;st(GH?'Saved on this device · 🔑 Connect to share with the team':'Saved on this device');list();return}st('Unsaved changes…');clearTimeout(timer);timer=setTimeout(save,1500)}
+function touch(){if(typeof LIVE!=='undefined'&&LIVE)return;pending=true;if(!canEdit()){S.updated=new Date().toISOString();try{localStorage.setItem('dbat-local',JSON.stringify({base,S}))}catch(e){}pending=false;st(GH?'Saved on this device · 🔑 Connect to share with the team':'Saved on this device');list();return}st('Unsaved changes…');clearTimeout(timer);timer=setTimeout(save,1500)}
 async function save(){
- if($('#dlg').open||$('#vw').open||!canEdit())return;
+ if($('#dlg').open||$('#vw').open||!canEdit()||(typeof LIVE!=='undefined'&&LIVE))return;
  pending=false;st('Saving…');
  try{
   let remote=null;try{const j=await api(DATA());gsha=j.sha;remote=JSON.parse(unb64(j.content))}catch(er){if(er.status!==404)throw er;gsha=null}
@@ -411,7 +468,7 @@ $('#rows').addEventListener('change',e=>{const el=e.target,f=el.dataset.f;if(!f)
  if(String(old??'')!==String(d[f]??''))d.log.unshift({d:today(),t:`${NAMES[f]||f} → ${d[f]===''||d[f]==null?'cleared':d[f]}`});
  tr.outerHTML=row(d);summary();if(f==='owner')filters();touch();
  if(f==='tvSt'&&d.tvSt===LOADED&&!d.proofs.some(p=>p.k==='tv'))toast('Marked as loaded. Add a photo of the screen with Add proof to close it off.')});
-$('#rows').addEventListener('click',e=>{const tr=e.target.closest('tr');if(!tr)return;if(e.target.closest('[data-open]'))openD(tr.dataset.id);if(e.target.closest('[data-pv]'))openV(tr.dataset.id)});
+$('#rows').addEventListener('click',e=>{const tr=e.target.closest('tr');if(!tr)return;if(e.target.closest('[data-open]'))openD(tr.dataset.id);if(e.target.closest('[data-aud]')){openD(tr.dataset.id);setTimeout(()=>{const a=$('#audit');if(a)a.scrollIntoView({behavior:'smooth'})},80)}if(e.target.closest('[data-pv]'))openV(tr.dataset.id)});
 $('#regions').addEventListener('click',e=>{const r=e.target.closest('.reg');if(!r)return;F.r=F.r===r.dataset.r?'':r.dataset.r;saveF();filters();list();$('#tbl').scrollIntoView({behavior:'smooth'})});
 [['#q','q','input'],['#fr','r','change'],['#fs','s','change'],['#fo','o','change'],['#fh','h','change']].forEach(([s,k,ev])=>$(s).addEventListener(ev,e=>{F[k]=e.target.value;saveF();list()}));
 $('#fod').addEventListener('change',e=>{F.od=e.target.checked;saveF();list()});
@@ -430,6 +487,7 @@ function openD(id){
   const inp=t==='sel'?`<select name="${k}">${opts(L,v)}</select>`:t==='area'?`<textarea name="${k}">${esc(v)}</textarea>`:`<input name="${k}" type="${t==='num'?'number':t==='date'?'date':'text'}" ${t==='num'?'min="0"':''} value="${esc(v)}">`;
   return `<label class="${t==='area'?'full':''}">${l}${inp}</label>`}).join('')+
   `<div class="log"><h3 style="margin:10px 0 6px;font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.1em">Engagement log</h3><div class="logadd"><input id="ln" placeholder="e.g. Called GM, billboard is a 2-sided pylon"><button type="button" id="la">Add</button></div><ul id="ll">${(d.log||[]).map(x=>`<li><b>${esc(fmtD(x.d))}</b>${esc(x.t)}</li>`).join('')||'<li class="empty">No activity yet.</li>'}</ul></div>`;
+ $('#fields').insertAdjacentHTML('beforeend',auditHTML(d));if(LIVE)$('#fields').querySelectorAll('input,select,textarea').forEach(x=>x.disabled=true);
  $('#fields').insertAdjacentHTML('beforeend',`<div class="log"><h3 style="margin:10px 0 0;font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.1em">Proof of execution</h3><div class="ptiles" id="ptiles"></div></div>`);
  $('#fields')._log=[...(d.log||[])];ptiles(cur);
  delArm=false;$('#del').textContent='Delete dealer';$('#del').style.display=cur?'':'none';$('#dpv').style.display=cur?'':'none';
@@ -444,7 +502,9 @@ $('#dlg').addEventListener('cancel',()=>{dialogOpen=false;if(pending)touch()});
 $('#df').addEventListener('submit',e=>{e.preventDefault();const fd=new FormData($('#df'));
  const d=cur||{id:'d'+Date.now().toString(36),log:[],proofs:[]};
  for(const[k,,t]of FIELDS){if(k==='h')continue;let v=fd.get(k);if(t==='num')v=v===''?(['screens','a0','nline'].includes(k)?0:null):+v;else if(typeof v==='string')v=v.trim();if(k==='owner'&&v!==d.owner)d.ownerSet=true;d[k]=v}
+ if(LIVE){closeD();return}
  if(!d.branch.trim()){toast('Give the dealer a name first');return}
+ if(cur)readAudit(d);
  const pend=$('#ln').value.trim();if(pend)$('#fields')._log.unshift({d:today(),t:pend});
  d.log=$('#fields')._log;if(!cur){S.dealers.push(d)}
  pending=true;closeD();all();toast('Saved '+d.branch)});
@@ -461,7 +521,7 @@ $('#kf').addEventListener('submit',async e=>{e.preventDefault();const f=e.target
   const x=await api(DATA()).catch(()=>null);if(x){gsha=x.sha;const r2=JSON.parse(unb64(x.content));S=migrate(r2);base=r2.updated||'';all()}let l=null;try{l=JSON.parse(localStorage.getItem('dbat-local')||'null')}catch(z){}if(l&&l.S&&(l.base||'')===base){S=migrate(l.S);all();pending=true;await save();try{localStorage.removeItem('dbat-local')}catch(z){}toast('Connected. Your device changes are now shared with the team.');return}st('Connected · edits save to GitHub');toast('Connected. Your edits now save for everyone.')}
  catch(x){$('#kmsg').textContent='GitHub rejected that key. Check it is correct and not expired.'}});
 /* resizable columns: drag the line at a header's right edge, or focus it and use the arrow keys */
-const COLW=[160,110,62,62,62,140,130,140,200,120,160,160,150];
+const COLW=[160,110,62,62,62,140,130,140,200,120,160,160,190,150];
 let CW=null;try{CW=JSON.parse(localStorage.getItem('dbat-cw')||'null')}catch(e){}
 if(!Array.isArray(CW)||CW.length!==COLW.length)CW=[...COLW];
 const saveW=()=>{try{localStorage.setItem('dbat-cw',JSON.stringify(CW))}catch(e){}};
@@ -490,6 +550,49 @@ document.addEventListener('focusout',e=>{const el=e.target.closest&&e.target.clo
 applyLabels();
 $('#pw').addEventListener('click',()=>{const has=S.dealers.find(d=>(d.proofs||[]).length);$('#proofwall').scrollIntoView({behavior:'smooth'});if(!has)toast('No proofs yet. Use Add proof on any dealer row to upload the first one.')});
 $('#dpv').addEventListener('click',()=>{if(cur)openV(cur.id)});
+
+document.addEventListener('change',e=>{const r=e.target.closest&&e.target.closest('.arow');if(!r)return;if(e.target.classList.contains('ac')){const L=r.dataset.k==='tv'?cat().tv:r.dataset.k==='a0'?cat().a0:cat().nl;e.target.className='ac '+(e.target.value?(e.target.value===L[0]?'c-g':'c-a'):'');if(e.target.value)r.querySelector('.aseen input').checked=true}});
+function readAudit(d){ensureAssets(d);let changed=0;document.querySelectorAll('#audit .arow').forEach(r=>{const x=d.assets[r.dataset.k][+r.dataset.i];if(!x)return;
+ const nv={loc:r.querySelector('.aloc').value.trim(),c:r.querySelector('.ac').value,det:r.querySelector('.adet').value.trim(),m:r.querySelector('.aseen input').checked?S.month:(x.m===S.month?'':x.m)};
+ if(nv.c!==x.c||nv.m!==x.m||nv.det!==x.det||nv.loc!==x.loc)changed++;Object.assign(x,nv)});
+ if(changed){syncFromAssets(d);d.lastContact=today();d.log.unshift({d:today(),t:`Asset audit updated (${changed} item${changed>1?'s':''})`})}}
+function monthStats(D){const sum=k=>D.reduce((a,d)=>a+(+d[k]||0),0),pct=(x,y)=>y?Math.round(x/y*100):0;
+ const a0=sum('a0'),tv=sum('screens'),nl=sum('nline');let a0kv=0,seen=0,tot=0;
+ D.forEach(d=>{const a=audit(d);a0kv+=a.a0.A.some(x=>x.c)?a.a0.A.filter(x=>x.c===KV).length:(d.a0Type===KV?a.a0.n:0);seen+=a.tv.seen+a.a0.seen+a.nl.seen;tot+=a.tv.n+a.a0.n+a.nl.n});
+ return{dealers:D.length,confirmed:D.filter(d=>d.reg==='Confirmed').length,aligned:D.filter(d=>health(d)[0]==='g').length,tv,a0,nl,
+  a0kv:pct(a0kv,a0),tvLoaded:pct(D.filter(d=>d.tvSt===LOADED).reduce((x,d)=>x+(+d.screens||0),0),tv),nlSet:pct(D.filter(d=>d.nlVeh).reduce((x,d)=>x+(+d.nline||0),0),nl),
+  audited:pct(seen,tot),proofs:D.reduce((x,d)=>x+(d.proofs||[]).filter(p=>!p.month||p.month===S.month).length,0)}}
+async function putArchive(m,snap){if(!canEdit()){$('#key').click();throw new Error('connect')}const path=GH.pre+`data/archive/${m}.json`;let sha;try{sha=(await api(path)).sha}catch(e){}
+ await api(path,{method:'PUT',body:JSON.stringify({message:`Archive ${m} (closed by ${KEY.name||'editor'})`,content:b64(JSON.stringify(snap)),sha})});ARCH[m]=snap}
+const ARCH={};
+async function getArchive(m){if(ARCH[m])return ARCH[m];let s=null;
+ try{if(canEdit()){const j=await api(GH.pre+`data/archive/${m}.json`);s=JSON.parse(unb64(j.content))}}catch(e){}
+ if(!s){for(const u of[`data/archive/${m}.json?t=${Date.now()}`,`https://raw.githubusercontent.com/${GH.owner}/${GH.repo}/HEAD/${GH.pre}data/archive/${m}.json`]){try{const r=await fetch(u,{cache:'no-store'});if(r.ok){s=await r.json();break}}catch(e){}}}
+ if(s)ARCH[m]=s;return s}
+let LIVE=null,closeArm=false;
+function historyRender(){const H=S.history||[];const live=monthStats(LIVE?LIVE.dealers:S.dealers);
+ const rows=[...H.map(h=>({m:h.m,s:h.stats,arch:true})),...(LIVE?[]:[{m:S.month,s:live,arch:false}])];
+ const cols=[['Registers confirmed',s=>`${s.confirmed}/${s.dealers}`],['Dealers aligned',s=>`${s.aligned}/${s.dealers}`],['A0 frames on KV',s=>s.a0kv+'%'],['TV content loaded',s=>s.tvLoaded+'%'],['N-Line vehicle set',s=>s.nlSet+'%'],['Assets audited',s=>s.audited+'%'],['Proofs',s=>s.proofs]];
+ $('#hist').innerHTML=`<div class="scroll" style="max-height:none"><table class="ht"><thead><tr><th>Month</th>${cols.map(c=>`<th class="n">${c[0]}</th>`).join('')}<th></th></tr></thead><tbody>${rows.map(r=>`<tr${r.arch?'':' class="hl"'}><td><b>${esc(mLabel(r.m))}</b>${r.arch?'':' <span class="tag">Live</span>'}</td>${cols.map(c=>`<td class="n">${esc(c[1](r.s))}</td>`).join('')}<td>${r.arch?`<button type="button" class="pf" data-view="${esc(r.m)}">View month</button>`:''}</td></tr>`).join('')}</tbody></table></div>`;
+ $('#mlab').textContent=mLabel(S.month);$('#closem').textContent=closeArm?`Click again to close ${mLabel(S.month)}`:`Close ${mLabel(S.month)} and start ${mLabel(nextM(S.month))}`;
+ $('#mon').textContent='📅 '+mLabel(S.month)+(LIVE?' (archive)':'')}
+async function closeMonth(){const m=S.month,snap={month:m,closedAt:new Date().toISOString(),closedBy:(typeof KEY!=='undefined'&&KEY&&KEY.name)||'',catalog:JSON.parse(JSON.stringify(cat())),dealers:JSON.parse(JSON.stringify(S.dealers))};
+ try{await putArchive(m,snap)}catch(e){toast('Could not save the archive. Nothing was closed.');return}
+ S.history=(S.history||[]).filter(h=>h.m!==m);S.history.push({m,stats:monthStats(S.dealers),closedAt:snap.closedAt});S.month=nextM(m);
+ S.dealers.forEach(d=>d.log.unshift({d:today(),t:`${mLabel(m)} closed and archived`}));closeArm=false;all();touch();toast(`${mLabel(m)} archived. ${mLabel(S.month)} has started with everything carried over.`)}
+async function viewMonth(m){const snap=await getArchive(m).catch(()=>null);if(!snap){toast('That month could not be loaded yet. Try again in a minute.');return}
+ if(!LIVE)LIVE={dealers:S.dealers,month:S.month,catalog:S.settings.catalog};S.dealers=snap.dealers;S.month=snap.month;S.settings.catalog=snap.catalog;migrate(S);applyCatalog();
+ document.body.classList.add('viewing');$('#vbar').hidden=false;$('#vbarT').textContent=`Viewing ${mLabel(m)} archive (read-only)`;all();window.scrollTo({top:0,behavior:'smooth'})}
+function backLive(){if(!LIVE)return;S.dealers=LIVE.dealers;S.month=LIVE.month;S.settings.catalog=LIVE.catalog;LIVE=null;applyCatalog();document.body.classList.remove('viewing');$('#vbar').hidden=true;all()}
+$('#hist').addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b)viewMonth(b.dataset.view)});
+$('#vback').addEventListener('click',backLive);
+$('#mon').addEventListener('click',()=>$('#history').scrollIntoView({behavior:'smooth'}));
+$('#closem').addEventListener('click',()=>{if(LIVE){toast('Go back to the live month first');return}if(!closeArm){closeArm=true;historyRender();setTimeout(()=>{closeArm=false;historyRender()},6000);return}closeMonth()});
+$('#catb').addEventListener('click',()=>{if(LIVE){toast('Go back to the live month to edit the content list');return}const f=$('#catf');f.elements.campaign.value=cat().campaign;f.elements.tv.value=cat().tv.join('\n');f.elements.a0.value=cat().a0.join('\n');f.elements.nl.value=cat().nl.join('\n');$('#catd').showModal()});
+$('#catc').addEventListener('click',()=>$('#catd').close());
+$('#catf').addEventListener('submit',e=>{e.preventDefault();const f=e.target,ls=x=>[...new Set(f.elements[x].value.split('\n').map(s=>s.trim()).filter(Boolean))].slice(0,30);
+ const nc={campaign:f.elements.campaign.value.trim()||CAT_DEFAULT.campaign,tv:ls('tv'),a0:ls('a0'),nl:ls('nl')};for(const k of['tv','a0','nl'])if(!nc[k].length)nc[k]=CAT_DEFAULT[k];
+ S.settings.catalog=nc;applyCatalog();$('#catd').close();all();touch();toast('Content list updated for '+mLabel(S.month))});
 
 /* proofs */
 const KN=Object.fromEntries(KINDS);
@@ -537,7 +640,7 @@ async function upload(files){if(!canEdit()){toast('Proof photos are stored on Gi
    const rel=`proofs/${d.id}/${Date.now()}-${V.k}-${(f.name||'proof').replace(/\.[^.]+$/,'').replace(/[^a-z0-9-]+/gi,'-').slice(0,40)}.${ext}`;
    await api(GH.pre+rel,{method:'PUT',body:JSON.stringify({message:`Proof: ${d.branch} · ${KN[V.k]} (by ${KEY.name||'editor'})`,content:await toB64(b)})});
    LOCAL[rel]=URL.createObjectURL(b);
-   d.proofs.push({id:rel,k:V.k,name:f.name||'proof',ct:b.type,d:today(),by:KEY.name||''});logTo(d,`Proof added: ${KN[V.k]}`);pending=true;V.i=1e9}
+   d.proofs.push({id:rel,k:V.k,name:f.name||'proof',ct:b.type,d:today(),by:KEY.name||'',month:S.month});logTo(d,`Proof added: ${KN[V.k]}`);pending=true;V.i=1e9}
   catch(er){toast(er.status===401||er.status===403?'Access key rejected. Reconnect with 🔑':`Could not upload ${f.name}`)}}
  $('#dmsg').textContent=`Drop ${KN[V.k]} photos or a short video here`;renderV();summary()}
 $('#vf').addEventListener('change',e=>{upload(e.target.files);e.target.value=''});
