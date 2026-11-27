@@ -462,9 +462,9 @@ function applyRO(){const ro=!canEdit();document.body.classList.toggle('ro',ro);$
 /* table edits */
 const NAMES={reg:'Register',owner:'HQ owner',lastContact:'Followed up',a0Type:'A0 posters',bbHas:'Billboard',tvSt:'TV content',nlVeh:'N-Line vehicle',screens:'TV count',a0:'A0 count',nline:'N-Line count'};
 const NUMF=['screens','a0','nline'];
-$('#rows').addEventListener('input',e=>{const el=e.target,f=el.dataset.f;if(!NUMF.includes(f))return;const d=S.dealers.find(x=>x.id===el.closest('tr').dataset.id);d[f]=el.value===''?null:Math.max(0,+el.value||0);summary()});
+$('#rows').addEventListener('input',e=>{const el=e.target,f=el.dataset.f;if(!NUMF.includes(f))return;const d=S.dealers.find(x=>x.id===el.closest('tr').dataset.id);if(el.dataset.prev===undefined)el.dataset.prev=String(d[f]??'');d[f]=el.value===''?null:Math.max(0,+el.value||0);summary()});
 $('#rows').addEventListener('change',e=>{const el=e.target,f=el.dataset.f;if(!f)return;const tr=el.closest('tr'),d=S.dealers.find(x=>x.id===tr.dataset.id);
- const old=d[f];d[f]=NUMF.includes(f)?(el.value===''?null:Math.max(0,+el.value||0)):el.value.trim();if(f==='owner')d.ownerSet=true;
+ const old=el.dataset.prev!==undefined?el.dataset.prev:d[f];d[f]=NUMF.includes(f)?(el.value===''?null:Math.max(0,+el.value||0)):el.value.trim();if(f==='owner')d.ownerSet=true;
  if(['reg','a0Type','bbHas','tvSt','nlVeh'].includes(f)&&String(old??'')!==String(d[f]??'')&&!(f==='reg'&&d.reg==='Pending'))d.lastContact=today();
  if(String(old??'')!==String(d[f]??''))d.log.unshift({d:today(),t:`${NAMES[f]||f} → ${d[f]===''||d[f]==null?'cleared':d[f]}`});
  tr.outerHTML=row(d);summary();if(f==='owner')filters();touch();
