@@ -457,7 +457,7 @@ async function api(path,opt={},abs){const r=await fetch(abs||`https://api.github
  headers:Object.assign({Accept:'application/vnd.github+json'},KEY&&KEY.token?{Authorization:'Bearer '+KEY.token}:{},opt.body?{'Content-Type':'application/json'}:{})});
  if(!r.ok){const er=new Error('GitHub '+r.status);er.status=r.status;throw er}return r.status===204?null:r.json()}
 const DATA=()=>GH.pre+'data/state.json';
-function touch(){if(typeof LIVE!=='undefined'&&LIVE)return;pending=true;if(!canEdit()){S.updated=new Date().toISOString();try{localStorage.setItem('dbat-local',JSON.stringify({base,S}))}catch(e){}pending=false;st(GH?'Saved on this device · 🔑 Connect to share with the team':'Saved on this device');list();return}st('Unsaved changes…');clearTimeout(timer);timer=setTimeout(save,1500)}
+function touch(){if(typeof LIVE!=='undefined'&&LIVE)return;pending=true;if(!canEdit()){S.updated=new Date().toISOString();try{localStorage.setItem('dbat-local',JSON.stringify({base,S}))}catch(e){}pending=false;st(GH?'Saved on this device · 🔒 Login to share with the team':'Saved on this device');list();return}st('Unsaved changes…');clearTimeout(timer);timer=setTimeout(save,1500)}
 async function save(){
  if($('#dlg').open||$('#vw').open||!canEdit()||(typeof LIVE!=='undefined'&&LIVE))return;
  pending=false;st('Saving…');
@@ -474,7 +474,7 @@ function applyRO(){const ro=!canEdit();document.body.classList.toggle('ro',ro);$
  st('Loading latest…');
  try{let r=null;if(canEdit()){const j=await api(DATA());gsha=j.sha;r=JSON.parse(unb64(j.content))}else{const x=await fetch('data/state.json?t='+Date.now(),{cache:'no-store'});if(x.ok)r=await x.json()}
   if(r){S=migrate(r);base=r.updated||'';all()}
-  if(!canEdit()){try{const l=JSON.parse(localStorage.getItem('dbat-local')||'null');if(l&&l.S&&(l.base||'')===base){S=migrate(l.S);all();st('Showing your device-only changes · 🔑 Connect to share')}}catch(e){}}}
+  if(!canEdit()){try{const l=JSON.parse(localStorage.getItem('dbat-local')||'null');if(l&&l.S&&(l.base||'')===base){S=migrate(l.S);all();st('Showing changes saved on this device · 🔒 Login to share them')}}catch(e){}}}
  catch(er){if(er.status===401)toast('Your access key was rejected. Reconnect with 🔑')}
  if(!$('#save').textContent.startsWith('Showing'))st(canEdit()?(S.updated?'Up to date':'Connected'):'Summary view · 🔒 Login for detail')})();
 
