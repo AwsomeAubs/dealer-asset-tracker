@@ -658,18 +658,18 @@
    "id": "d27",
    "region": "KZN",
    "branch": "Hyundai Umhlanga",
-   "screens": 3,
+   "screens": 4,
    "a0": 17,
    "nline": 1,
    "bb": null,
    "bbType": "",
    "bbSize": "",
-   "owner": "",
+   "owner": "Prishen",
    "contact": "",
    "phone": "",
    "email": "",
-   "reg": "Not contacted",
-   "lastContact": "",
+   "reg": "Briefed",
+   "lastContact": "2026-11-27",
    "followUp": "",
    "screensSt": "Not set up",
    "poster": "Not started",
@@ -678,7 +678,45 @@
    "bbCost": null,
    "otherCost": null,
    "notes": "",
-   "log": []
+   "log": [
+    {
+     "d": "2026-11-27",
+     "t": "Register \u2192 Briefed"
+    },
+    {
+     "d": "2026-11-27",
+     "t": "HQ owner \u2192 Prishen"
+    },
+    {
+     "d": "2026-11-27",
+     "t": "TV count \u2192 4"
+    },
+    {
+     "d": "2026-11-27",
+     "t": "A0 posters \u2192 Service & parts offer"
+    },
+    {
+     "d": "2026-11-27",
+     "t": "Billboard \u2192 No"
+    },
+    {
+     "d": "2026-11-27",
+     "t": "TV content \u2192 Briefed \u2013 pending"
+    },
+    {
+     "d": "2026-11-27",
+     "t": "N-Line vehicle \u2192 Tucson N Line"
+    }
+   ],
+   "ownerSet": true,
+   "a0Type": "Service & parts offer",
+   "bbHas": "No",
+   "tvSt": "Briefed \u2013 pending",
+   "nlVeh": "Tucson N Line",
+   "tvAd": "",
+   "a0Ad": "",
+   "bbAd": "",
+   "proofs": []
   },
   {
    "id": "d28",
@@ -1201,5 +1239,6 @@
    "log": []
   }
  ],
- "updated": ""
+ "updated": "2026-11-27T04:04:30.000Z",
+ "updatedBy": "Aubrey"
 }
