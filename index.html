@@ -27,7 +27,7 @@ h1{font-size:clamp(22px,2.4vw,28px);line-height:1.15;margin:0 0 6px;font-weight:
 .dn{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;grid-template-columns:92px minmax(0,1fr);gap:14px;align-items:center}
 .dn h3{grid-column:1/-1;margin:0;font-size:11px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.1em}
 .ring{position:relative;width:92px;height:92px}.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
-.ring div{position:absolute;inset:0;display:grid;place-content:center;text-align:center;line-height:1.05}.ring b{font-size:21px;font-weight:600;font-variant-numeric:tabular-nums}.ring small{font-size:11px;color:var(--mut)}
+.ring div{position:absolute;inset:0;display:grid;place-content:center;text-align:center;line-height:1.05}.ring small+small{font-size:10px}.ring b{font-size:21px;font-weight:600;font-variant-numeric:tabular-nums}.ring small{font-size:11px;color:var(--mut)}
 .dl{list-style:none;margin:0;padding:0;font-size:12.5px;color:var(--mut)}.dl li{display:flex;align-items:center;gap:6px;padding:2px 0}.dl i{flex:none;width:8px;height:8px;border-radius:99px}.dl span{flex:1}.dl em{font-style:normal;color:var(--ink);font-variant-numeric:tabular-nums}
 .dnote{grid-column:1/-1;font-size:12px;color:var(--mut);margin:0}
 @media(prefers-reduced-motion:no-preference){.ring circle{transition:stroke-dasharray .6s ease,stroke-dashoffset .6s ease}}
@@ -147,7 +147,7 @@ dialog::backdrop{background:#000000b3;backdrop-filter:blur(3px)}
 <main class="band"><div class="wrap">
  <div class="two">
   <section class="panel">
-   <h2><span data-lab="h-region">Register confirmation by region</span></h2>
+   <h2><span data-lab="h-region">Dealer progress by region</span></h2>
    <div id="regions"></div>
    <div class="legend" id="legend"></div>
   </section>
@@ -248,6 +248,7 @@ function items(d){const it=[['reg',d.reg==='Confirmed']];
  if((+d.a0||0)>0)it.push(['a0',d.a0Type===KV]);
  it.push(['bb',['Yes','No','No plan'].includes(d.bbHas)]);
  if((+d.nline||0)>0)it.push(['nl',!!d.nlVeh]);return it}
+function progress(d){const it=items(d);let s=0;for(const [k,ok] of it){if(ok)s+=1;else{const f={reg:'reg',tv:'tvSt',a0:'a0Type',bb:'bbHas',nl:'nlVeh'}[k];if(cc(f,d)==='c-a')s+=.5}}return it.length?s/it.length:0}
 const started=d=>d.reg!=='Pending'||d.a0Type||d.bbHas||d.tvSt!=='No action yet'||d.nlVeh||d.lastContact;
 const complete=d=>items(d).every(x=>x[1]);
 const overdue=d=>started(d)&&!complete(d)&&(!d.lastContact||d.lastContact<ago(14));
@@ -269,9 +270,9 @@ let F={q:'',r:'',s:'',o:'',od:false,h:''};
 try{Object.assign(F,JSON.parse(sessionStorage.getItem('dbat-f')||'{}'))}catch(e){}
 function saveF(){try{sessionStorage.setItem('dbat-f',JSON.stringify(F))}catch(e){}}
 
-function ring(title,key,cats,tot,ok,note){let off=0;const pct=tot?Math.round(ok/tot*100):0;
+function ring(title,key,cats,tot,ok,note){let off=0;const done=cats.reduce((a,c)=>a+((c[3]??0)===1?c[1]:0),0),prog=cats.reduce((a,c)=>a+((c[3]??0)>0&&(c[3]??0)<1?c[1]:0),0),score=cats.reduce((a,c)=>a+c[1]*(c[3]??0),0),pct=tot?Math.round(score/tot*100):0;
  const arcs=tot?cats.filter(v=>v[1]).map(([l,v,c])=>{const len=v/tot*100,g=Math.max(len-.6,.4),s=`<circle cx="50" cy="50" r="40" fill="none" stroke="${c}" stroke-width="12" pathLength="100" stroke-dasharray="${g} ${100-g}" stroke-dashoffset="${-off}"><title>${esc(l)}: ${v}</title></circle>`;off+=len;return s}).join(''):'';
- return `<div class="dn"><h3 data-lab="dn-${key}" data-def="${esc(title)}"${editMode?' contenteditable="true" spellcheck="false"':''}>${esc(lab('dn-'+key,title))}</h3><div class="ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="none" stroke="${DK}" stroke-width="12"/>${arcs}</svg><div><b>${tot?pct+'%':'–'}</b><small>${ok} of ${tot}</small></div></div>
+ return `<div class="dn"><h3 data-lab="dn-${key}" data-def="${esc(title)}"${editMode?' contenteditable="true" spellcheck="false"':''}>${esc(lab('dn-'+key,title))}</h3><div class="ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="none" stroke="${DK}" stroke-width="12"/>${arcs}</svg><div><b>${tot?pct+'%':'–'}</b><small>${done} done</small>${prog?`<small>${prog} in progress</small>`:''}</div></div>
  <ul class="dl">${cats.filter((v,i)=>v[1]||i===0).map(([l,v,c])=>`<li><i style="background:${c}"></i><span>${esc(l)}</span><em>${v}</em></li>`).join('')}</ul>${note?`<p class="dnote">${esc(note)}</p>`:''}</div>`}
 
 function summary(){
@@ -285,16 +286,16 @@ function summary(){
  const nlTop=Object.entries(D.filter(d=>d.nlVeh&&(+d.nline||0)>0).reduce((m,d)=>(m[d.nlVeh]=(m[d.nlVeh]||0)+(+d.nline||0),m),{})).sort((x,y)=>y[1]-x[1]);
  const nlSet=nlTop.reduce((a,x)=>a+x[1],0);
  $('#donuts').innerHTML=[
-  ring('Dealer registers','reg',REG.slice().reverse().map(s=>[s,D.filter(d=>d.reg===s).length,REGC[s]]),n,conf),
-  ring('A0 snapper frames','a0',[['Latest campaign KV',w('a0',d=>d.a0Type===KV),G],['Other poster content',w('a0',d=>d.a0Type&&d.a0Type!==KV),A],['Not set',w('a0',d=>!d.a0Type),GR]],a0,w('a0',d=>d.a0Type===KV)),
-  ring('Billboards','bb',[['Has billboard',D.filter(d=>d.bbHas==='Yes').length,G],['In progress',D.filter(d=>d.bbHas==='In progress').length,A],['No billboard',D.filter(d=>d.bbHas==='No').length,MID],['No plan',D.filter(d=>d.bbHas==='No plan').length,DK],['Not checked',D.filter(d=>!d.bbHas).length,GR]],n,D.filter(d=>d.bbHas==='Yes').length,'Dealers with a billboard on premises'),
-  ring('TV / digital screens','tv',[['Content loaded on screen',w('screens',d=>d.tvSt===LOADED),G],['Content shared',w('screens',d=>d.tvSt==='Content shared'),'#e0b964'],['Briefed – pending',w('screens',d=>d.tvSt==='Briefed – pending'),A],['No action yet',w('screens',d=>d.tvSt==='No action yet'),GR],['No screen',w('screens',d=>d.tvSt==='No screen'),DK]],tv,w('screens',d=>d.tvSt===LOADED)),
-  ring('N-Line stands','nl',[...nlTop.slice(0,3).map(([v,c],i)=>[v,c,[G,'#2a9d64','#22804f'][i]]),...(nlTop.length>3?[['Other vehicles',nlTop.slice(3).reduce((a,x)=>a+x[1],0),'#1d6b43']]:[]),['No vehicle set',nl-nlSet,GR]],nl,nlSet,'Champion vehicle on display this month')
+  ring('Dealer registers','reg',REG.slice().reverse().map(s=>[s,D.filter(d=>d.reg===s).length,REGC[s],s==='Confirmed'?1:s==='Pending'?0:.5]),n,conf),
+  ring('A0 snapper frames','a0',[['Latest campaign KV',w('a0',d=>d.a0Type===KV),G,1],['Other poster content',w('a0',d=>d.a0Type&&d.a0Type!==KV),A,.5],['Not set',w('a0',d=>!d.a0Type),GR,0]],a0,w('a0',d=>d.a0Type===KV)),
+  ring('Billboards','bb',[['Has billboard',D.filter(d=>d.bbHas==='Yes').length,G,1],['No billboard',D.filter(d=>d.bbHas==='No').length,'#2a9d64',1],['No plan',D.filter(d=>d.bbHas==='No plan').length,'#22804f',1],['In progress',D.filter(d=>d.bbHas==='In progress').length,A,.5],['Not checked',D.filter(d=>!d.bbHas).length,GR,0]],n,0,`${D.filter(d=>d.bbHas==='Yes').length} dealers have a billboard on premises`),
+  ring('TV / digital screens','tv',[['Content loaded on screen',w('screens',d=>d.tvSt===LOADED),G,1],['Content shared',w('screens',d=>d.tvSt==='Content shared'),'#e0b964',.5],['Briefed – pending',w('screens',d=>d.tvSt==='Briefed – pending'),A,.5],['No action yet',w('screens',d=>d.tvSt==='No action yet'),GR,0],['No screen',w('screens',d=>d.tvSt==='No screen'),DK,1]],tv,w('screens',d=>d.tvSt===LOADED)),
+  ring('N-Line stands','nl',[...nlTop.slice(0,3).map(([v,c],i)=>[v,c,[G,'#2a9d64','#22804f'][i],1]),...(nlTop.length>3?[['Other vehicles',nlTop.slice(3).reduce((a,x)=>a+x[1],0),'#1d6b43',1]]:[]),['No vehicle set',nl-nlSet,GR,0]],nl,nlSet,'Champion vehicle on display this month')
  ].join('');
  const regs=[...new Set(D.map(d=>d.region))];
  $('#regions').innerHTML=regs.map(r=>{const g=D.filter(d=>d.region===r),c=g.filter(d=>d.reg==='Confirmed').length;
-  return `<div class="reg" data-r="${esc(r)}" title="Filter to ${esc(r)}"><b>${esc(r)}</b><div class="bar">${REG.slice().reverse().map(s=>{const x=g.filter(d=>d.reg===s).length;return x?`<i style="width:${x/g.length*100}%;background:${REGC[s]}" title="${esc(s)}: ${x}"></i>`:''}).join('')}</div><small>${c}/${g.length} confirmed · ${g.reduce((a,d)=>a+(+d.screens||0),0)} TV · ${g.reduce((a,d)=>a+(+d.a0||0),0)} A0 · ${g.reduce((a,d)=>a+(+d.nline||0),0)} NL</small></div>`}).join('');
- $('#legend').innerHTML=REG.map(s=>`<span><i style="background:${REGC[s]}"></i>${s}</span>`).join('');
+  return `<div class="reg" data-r="${esc(r)}" title="Filter to ${esc(r)}"><b>${esc(r)}</b><div class="bar">${[['g',G,'All items aligned'],['a',A,'Briefed, some items open'],['r',RD,'Outstanding'],['none',GR,'Not started']].map(([k,c,l])=>{const x=g.filter(d=>health(d)[0]===k).length;return x?`<i style="width:${x/g.length*100}%;background:${c}" title="${l}: ${x}"></i>`:''}).join('')}</div><small><b style="color:var(--ink);font-weight:600">${Math.round(g.reduce((a,d)=>a+progress(d),0)/g.length*100)}%</b> progress · ${c}/${g.length} confirmed · ${g.reduce((a,d)=>a+(+d.screens||0),0)} TV · ${g.reduce((a,d)=>a+(+d.a0||0),0)} A0 · ${g.reduce((a,d)=>a+(+d.nline||0),0)} NL</small></div>`}).join('');
+ $('#legend').innerHTML=[[G,'All items aligned'],[A,'Briefed, some items open'],[RD,'Outstanding, 14+ days'],[GR,'Not started']].map(([c,l])=>`<span><i style="background:${c}"></i>${l}</span>`).join('');
  const RW=[['A0 posters',d=>(+d.a0||0)>0,d=>d.a0Type===KV?G:d.a0Type?A:GR,'on latest KV'],['Billboards',()=>true,d=>BBC[d.bbHas]||GR,'decided'],['TV content',d=>(+d.screens||0)>0&&d.tvSt!=='No screen',d=>TVSC[d.tvSt]||GR,'loaded on screen'],['N-Line vehicle',d=>(+d.nline||0)>0,d=>d.nlVeh?G:GR,'vehicle set'],['Dealer status',()=>true,d=>({g:G,a:A,r:RD,none:GR})[health(d)[0]],'fully aligned']];
  const order=[G,'#2a9d64','#e0b964',A,'#b08a3e',MID,RD,DK,GR];
  $('#roll').innerHTML=RW.map(([l,app,col,word])=>{const P=D.filter(app),m=P.length;const cnt={};P.forEach(d=>{const c=col(d);cnt[c]=(cnt[c]||0)+1});const done=cnt[G]||0;
@@ -364,7 +365,7 @@ function applyRO(){const ro=!canEdit();document.body.classList.toggle('ro',ro);$
   if(r){S=migrate(r);base=r.updated||'';all()}
   if(!canEdit()){try{const l=JSON.parse(localStorage.getItem('dbat-local')||'null');if(l&&l.S&&(l.base||'')===base){S=migrate(l.S);all();st('Showing your device-only changes · 🔑 Connect to share')}}catch(e){}}}
  catch(er){if(er.status===401)toast('Your access key was rejected. Reconnect with 🔑')}
- st(canEdit()?(S.updated?'Up to date':'Connected'):'View only · 🔑 Connect to edit')})();
+ if(!$('#save').textContent.startsWith('Showing'))st(canEdit()?(S.updated?'Up to date':'Connected'):'View only · 🔑 Connect to edit')})();
 
 
 /* table edits */
