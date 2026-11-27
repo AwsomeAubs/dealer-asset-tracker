@@ -168,6 +168,14 @@ body.viewing #rows input,body.viewing #rows select{pointer-events:none;opacity:.
 .pf.aud.c-g{border-color:#2e7d55;color:#c3f0d6;background:#34c27a1f}.pf.aud.c-a{border-color:#8a6d2f;color:#f5d798;background:#d9a4411f}
 .ht td,.ht th{white-space:nowrap}.ht tr.hl td{background:#ffffff08}.tag{font-size:11px;padding:2px 8px;border-radius:99px;background:#1a8cff33;color:#bcdcff;margin-left:6px}
 @media(max-width:700px){.arow{grid-template-columns:80px minmax(0,1fr) 56px 50px}.arow .aloc,.arow .adet{grid-column:1/-1}}
+
+body.public #xl,body.public #add,body.public #pw,body.public .dlset,body.public .filters,body.public .hleg:not(#dleg),body.public .rohint,body.public #tblwrap,body.public #foot,body.public #proofwall,body.public #catb,body.public #closem,body.public #eh,body.public #rcw{display:none!important}
+body:not(.public) #dlist{display:none}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.dch{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:14px;background:#ffffff08;border:1px solid #34507a}
+.dch i{flex:none;width:10px;height:10px;border-radius:99px}.dch span{flex:1;display:grid;line-height:1.25}.dch b{font-weight:500;font-size:14px}.dch small{font-size:12px;color:var(--mut)}.dch em{font-style:normal;font-variant-numeric:tabular-nums;font-weight:600}
+.dch.h-g{border-color:#2e7d55}.dch.h-a{border-color:#8a6d2f}.dch.h-r{border-color:#a3473b}
+#key.pri{font-weight:600}
 </style>
 </head>
 <body>
@@ -206,6 +214,11 @@ body.viewing #rows input,body.viewing #rows select{pointer-events:none;opacity:.
  </div>
 
 
+ <section class="panel" style="margin-top:16px" id="dlist">
+  <h2><span data-lab="h-dlist">Dealer status</span> · <span id="dlsum"></span></h2>
+  <div class="hleg" id="dleg"></div>
+  <div class="dgrid" id="dgrid"></div>
+ </section>
  <section class="panel" style="margin-top:16px" id="history">
   <h2><span data-lab="h-hist">Monthly history</span> · <span id="mlab"></span></h2>
   <div class="actions" style="margin:0 0 14px"><button type="button" id="catb">Content list for this month</button><button type="button" class="pri" id="closem">Close month</button></div>
@@ -230,8 +243,8 @@ body.viewing #rows input,body.viewing #rows select{pointer-events:none;opacity:.
  </div>
  <datalist id="ownlist"></datalist>
  <div class="hleg"><span><i style="background:#34c27a"></i>All items aligned</span><span><i style="background:#d9a441"></i>Briefed, some items open</span><span><i style="background:#df6150"></i>Outstanding, no follow-up in 14+ days</span><span><i style="background:#3a3f47"></i>Not started</span></div>
- <p class="rohint note" style="margin:0 0 10px">Your changes save on this device. Click <b>🔑 Connect to edit</b> at the top to share them with the team and to upload proofs.</p>
- <div class="scroll"><table id="tbl"><colgroup id="cg"></colgroup><thead><tr>
+ <p class="rohint note" style="margin:0 0 10px">Your changes save on this device only. Log in to save them for everyone.</p>
+ <div class="scroll" id="tblwrap"><table id="tbl"><colgroup id="cg"></colgroup><thead><tr>
   <th>Dealer</th><th>Region</th><th class="n" title="TV / digital screens (edit the count)">TV</th><th class="n" title="A0 clip-on poster frames (edit the count)">A0</th><th class="n" title="N-Line branded display spaces (edit the count)">NL</th><th>Register</th><th>HQ owner</th><th>Last follow-up</th><th>A0 posters</th><th>Billboard</th><th>TV content</th><th>N-Line vehicle</th><th>Asset audit</th>
  </tr></thead><tbody id="rows"></tbody></table></div>
  <p class="note" id="foot"></p>
@@ -262,13 +275,13 @@ body.viewing #rows input,body.viewing #rows select{pointer-events:none;opacity:.
  <div class="df"><span></span><span style="display:flex;gap:10px"><button type="button" id="catc">Cancel</button><button class="pri" type="submit">Save list</button></span></div>
 </form></dialog>
 <dialog id="kd"><form id="kf">
- <div class="dh"><h2>Connect to edit</h2><p>Anyone with the link can view. To save changes and upload proofs, add a GitHub access key. It stays on this device only.</p></div>
+ <div class="dh"><h2>Editor login</h2><p>Anyone with the link sees the summary. Log in to see the full dealer detail, audits and photos, and to make changes. Your key stays on this device only.</p></div>
  <div class="form">
   <label class="full">Your name (shown on saves)<input name="uname" autocomplete="off" data-lpignore="true" data-1p-ignore required></label>
   <label class="full">GitHub access key (fine-grained token: Contents read and write, this repo only)<input name="token" type="text" autocomplete="off" spellcheck="false" data-lpignore="true" data-1p-ignore style="-webkit-text-security:disc" required></label>
   <p class="note full" id="kmsg" style="margin:0"></p>
  </div>
- <div class="df"><button type="button" id="kout">Disconnect this device</button><span style="display:flex;gap:10px"><button type="button" id="kc">Cancel</button><button class="pri" type="submit">Connect</button></span></div>
+ <div class="df"><button type="button" id="kout">Log out on this device</button><span style="display:flex;gap:10px"><button type="button" id="kc">Cancel</button><button class="pri" type="submit">Log in</button></span></div>
 </form></dialog>
 <div class="toast" id="toast" role="status"></div>
 
@@ -292,6 +305,8 @@ const KINDS=[['bb','Billboard'],['a0','A0 snapper frame'],['nl','N-Line display'
 const BBT=['','Pylon / totem','Wall-mounted static','Rooftop static','Freestanding static','LED digital'];
 let S=JSON.parse($('#state').textContent);
 let editMode=false;
+function isEditor(){return canEdit()}
+function applyMode(){document.body.classList.toggle('public',!isEditor())}
 const lab=(k,def)=>((S.settings&&S.settings.labels)||{})[k]||def;
 function migrate(s){
  const RM={'Not contacted':'Pending','Needs correction':'Awaiting reply'};
@@ -387,6 +402,10 @@ function summary(){
  $('#regions').innerHTML=regs.map(r=>{const g=D.filter(d=>d.region===r),c=g.filter(d=>d.reg==='Confirmed').length;
   return `<div class="reg" data-r="${esc(r)}" title="Filter to ${esc(r)}"><b>${esc(r)}</b><div class="bar">${[['g',G,'All items aligned'],['a',A,'Briefed, some items open'],['r',RD,'Outstanding'],['none',GR,'Not started']].map(([k,c,l])=>{const x=g.filter(d=>health(d)[0]===k).length;return x?`<i style="width:${x/g.length*100}%;background:${c}" title="${l}: ${x}"></i>`:''}).join('')}</div><small><b style="color:var(--ink);font-weight:600">${Math.round(g.reduce((a,d)=>a+progress(d),0)/g.length*100)}%</b> progress · ${c}/${g.length} confirmed · ${g.reduce((a,d)=>a+(+d.screens||0),0)} TV · ${g.reduce((a,d)=>a+(+d.a0||0),0)} A0 · ${g.reduce((a,d)=>a+(+d.nline||0),0)} NL</small></div>`}).join('');
  $('#legend').innerHTML=[[G,'All items aligned'],[A,'Briefed, some items open'],[RD,'Outstanding, 14+ days'],[GR,'Not started']].map(([c,l])=>`<span><i style="background:${c}"></i>${l}</span>`).join('');
+ if($('#dgrid')){const HC={g:G,a:A,r:RD,none:GR};const L=D.map(d=>({d,h:health(d)[0],p:Math.round(progress(d)*100)})).sort((x,y)=>y.p-x.p||x.d.branch.localeCompare(y.d.branch));
+  const act=L.filter(x=>x.h!=='none').length;$('#dlsum').textContent=`${act} active · ${L.length-act} not started`;
+  $('#dleg').innerHTML=[[G,'All items aligned'],[A,'Briefed, some items open'],[RD,'Outstanding, 14+ days'],[GR,'Not started']].map(([c,l])=>`<span><i style="background:${c}"></i>${l}</span>`).join('');
+  $('#dgrid').innerHTML=L.map(x=>`<div class="dch h-${x.h}"><i style="background:${HC[x.h]}"></i><span><b>${esc(x.d.branch.replace(/^Hyundai /,''))}</b><small>${esc(x.d.region)}</small></span><em>${x.p}%</em></div>`).join('')}
  const RW=[['A0 posters',d=>(+d.a0||0)>0,d=>d.a0Type===KV?G:d.a0Type?A:GR,'on latest KV'],['Billboards',()=>true,d=>BBC[d.bbHas]||GR,'decided'],['TV content',d=>(+d.screens||0)>0&&d.tvSt!=='No screen',d=>TVSC[d.tvSt]||GR,'loaded on screen'],['N-Line vehicle',d=>(+d.nline||0)>0,d=>d.nlVeh?G:GR,'vehicle set'],['Dealer status',()=>true,d=>({g:G,a:A,r:RD,none:GR})[health(d)[0]],'fully aligned']];
  const order=[G,'#2a9d64','#e0b964',A,'#b08a3e',MID,RD,DK,GR];
  $('#roll').innerHTML=RW.map(([l,app,col,word])=>{const P=D.filter(app),m=P.length;const cnt={};P.forEach(d=>{const c=col(d);cnt[c]=(cnt[c]||0)+1});const done=cnt[G]||0;
@@ -423,7 +442,7 @@ function filters(){
  $('#fh').innerHTML=[['','Any dealer status'],['g','All items aligned'],['a','Briefed, some items open'],['r','Outstanding, 14+ days'],['none','Not started']].map(([v,l])=>`<option value="${v}"${v===F.h?' selected':''}>${l}</option>`).join('');
  $('#q').value=F.q;$('#fod').checked=F.od;$('#deadline').value=S.settings.deadline;
 }
-function all(){applyCatalog();summary();filters();list();wall();historyRender()}
+function all(){applyCatalog();applyMode();summary();filters();list();wall();historyRender()}
 
 /* saving: the GitHub repo is the shared store (data/state.json + proofs/) */
 let timer=null,pending=false,dialogOpen=false,base=S.updated||'',gsha=null;
@@ -450,14 +469,14 @@ async function save(){
   gsha=j.content.sha;base=S.updated;st('All changes saved to GitHub');list();
  }catch(er){if(er.status===401||er.status===403){st('Access key rejected or read-only. Reconnect with 🔑')}else{st('Save failed, retrying…');timer=setTimeout(save,6000)}}
 }
-function applyRO(){const ro=!canEdit();document.body.classList.toggle('ro',ro);$('#key').textContent=canEdit()?`🔑 ${KEY.name||'Connected'}`:'🔑 Connect to edit'}
+function applyRO(){const ro=!canEdit();document.body.classList.toggle('ro',ro);$('#key').textContent=canEdit()?`🔓 Editing as ${KEY.name||'editor'}`:'🔒 Login';$('#key').classList.toggle('pri',!canEdit());if(typeof applyMode==='function')applyMode()}
 (async()=>{applyRO();if(!GH){st('Preview: open the GitHub Pages link to save');return}
  st('Loading latest…');
  try{let r=null;if(canEdit()){const j=await api(DATA());gsha=j.sha;r=JSON.parse(unb64(j.content))}else{const x=await fetch('data/state.json?t='+Date.now(),{cache:'no-store'});if(x.ok)r=await x.json()}
   if(r){S=migrate(r);base=r.updated||'';all()}
   if(!canEdit()){try{const l=JSON.parse(localStorage.getItem('dbat-local')||'null');if(l&&l.S&&(l.base||'')===base){S=migrate(l.S);all();st('Showing your device-only changes · 🔑 Connect to share')}}catch(e){}}}
  catch(er){if(er.status===401)toast('Your access key was rejected. Reconnect with 🔑')}
- if(!$('#save').textContent.startsWith('Showing'))st(canEdit()?(S.updated?'Up to date':'Connected'):'View only · 🔑 Connect to edit')})();
+ if(!$('#save').textContent.startsWith('Showing'))st(canEdit()?(S.updated?'Up to date':'Connected'):'Summary view · 🔒 Login for detail')})();
 
 
 /* table edits */
@@ -515,12 +534,12 @@ $('#del').addEventListener('click',()=>{if(!delArm){delArm=true;$('#del').textCo
 $('#add').addEventListener('click',()=>openD(null));
 $('#key').addEventListener('click',()=>{if(!GH){toast('Open the GitHub Pages link to connect');return}const f=$('#kf');f.elements.uname.value=KEY&&KEY.name||'';f.elements.token.value='';$('#kmsg').textContent=canEdit()?'This device is connected. Enter a new key to replace it.':'';$('#kout').style.display=canEdit()?'':'none';$('#kd').showModal()});
 $('#kc').addEventListener('click',()=>$('#kd').close());
-$('#kout').addEventListener('click',()=>{KEY=null;try{localStorage.removeItem('dbat-gh')}catch(e){}$('#kd').close();applyRO();list();st('View only · 🔑 Connect to edit')});
+$('#kout').addEventListener('click',()=>{KEY=null;try{localStorage.removeItem('dbat-gh')}catch(e){}$('#kd').close();applyRO();list();st('Summary view · 🔒 Login for detail')});
 $('#kf').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,k={name:f.elements.uname.value.trim(),token:f.elements.token.value.trim()};$('#kmsg').textContent='Checking key…';
  try{const r=await fetch(`https://api.github.com/repos/${GH.owner}/${GH.repo}`,{headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+k.token},cache:'no-store'});
   if(!r.ok)throw 0;const j=await r.json();if(!(j.permissions&&j.permissions.push)){$('#kmsg').textContent='That key can read but not write. Give it Contents: read and write on this repo.';return}
   KEY=k;try{localStorage.setItem('dbat-gh',JSON.stringify(k))}catch(x){}$('#kd').close();applyRO();list();
-  const x=await api(DATA()).catch(()=>null);if(x){gsha=x.sha;const r2=JSON.parse(unb64(x.content));S=migrate(r2);base=r2.updated||'';all()}let l=null;try{l=JSON.parse(localStorage.getItem('dbat-local')||'null')}catch(z){}if(l&&l.S&&(l.base||'')===base){S=migrate(l.S);all();pending=true;await save();try{localStorage.removeItem('dbat-local')}catch(z){}toast('Connected. Your device changes are now shared with the team.');return}st('Connected · edits save to GitHub');toast('Connected. Your edits now save for everyone.')}
+  const x=await api(DATA()).catch(()=>null);if(x){gsha=x.sha;const r2=JSON.parse(unb64(x.content));S=migrate(r2);base=r2.updated||'';all()}let l=null;try{l=JSON.parse(localStorage.getItem('dbat-local')||'null')}catch(z){}if(l&&l.S&&(l.base||'')===base){S=migrate(l.S);all();pending=true;await save();try{localStorage.removeItem('dbat-local')}catch(z){}toast('Connected. Your device changes are now shared with the team.');return}st('Connected · edits save to GitHub');toast('Logged in. Full detail unlocked and your edits save for everyone.')}
  catch(x){$('#kmsg').textContent='GitHub rejected that key. Check it is correct and not expired.'}});
 /* resizable columns: drag the line at a header's right edge, or focus it and use the arrow keys */
 const COLW=[160,110,62,62,62,140,130,140,200,120,160,160,200];
