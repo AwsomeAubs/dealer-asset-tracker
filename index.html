@@ -161,12 +161,13 @@ dialog::backdrop{background:#050b16cc}
 body.viewing #rows input,body.viewing #rows select{pointer-events:none;opacity:.85}body.viewing #add,body.viewing #eh,body.viewing #closem,body.viewing #catb,body.viewing #drop,body.viewing #vdel,body.viewing #ok,body.viewing #del,body.viewing .logadd{display:none!important}
 .ah{margin:12px 0 0;font-size:11px;font-weight:600;color:#a9bdd8;text-transform:uppercase;letter-spacing:.1em}
 .agrp{margin:10px 0;border:1px solid #34507a;border-radius:14px;padding:8px 10px;background:#ffffff06}.agh{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:6px}.agh span{color:var(--mut)}
-.arow{display:grid;grid-template-columns:96px minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr) 70px;gap:8px;align-items:center;padding:4px 0}
+.arow{display:grid;grid-template-columns:96px minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr) 64px 56px;gap:8px;align-items:center;padding:4px 0}
 .arow input,.arow select{min-height:36px;font-size:13.5px}.aid{font-size:12px;color:#a9bdd8;font-variant-numeric:tabular-nums}.aseen{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--mut)}.aseen input{min-height:18px;width:18px}
 .arow select.c-g{background:#34c27a24;border-color:#2e7d55;color:#c3f0d6}.arow select.c-a{background:#d9a4412a;border-color:#8a6d2f;color:#f5d798}
+.aph{min-height:34px;padding:0 10px;font-size:13px}
 .pf.aud.c-g{border-color:#2e7d55;color:#c3f0d6;background:#34c27a1f}.pf.aud.c-a{border-color:#8a6d2f;color:#f5d798;background:#d9a4411f}
 .ht td,.ht th{white-space:nowrap}.ht tr.hl td{background:#ffffff08}.tag{font-size:11px;padding:2px 8px;border-radius:99px;background:#1a8cff33;color:#bcdcff;margin-left:6px}
-@media(max-width:700px){.arow{grid-template-columns:80px minmax(0,1fr) 60px}.arow .aloc,.arow .adet{grid-column:1/-1}}
+@media(max-width:700px){.arow{grid-template-columns:80px minmax(0,1fr) 56px 50px}.arow .aloc,.arow .adet{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -231,7 +232,7 @@ body.viewing #rows input,body.viewing #rows select{pointer-events:none;opacity:.
  <div class="hleg"><span><i style="background:#34c27a"></i>All items aligned</span><span><i style="background:#d9a441"></i>Briefed, some items open</span><span><i style="background:#df6150"></i>Outstanding, no follow-up in 14+ days</span><span><i style="background:#3a3f47"></i>Not started</span></div>
  <p class="rohint note" style="margin:0 0 10px">Your changes save on this device. Click <b>🔑 Connect to edit</b> at the top to share them with the team and to upload proofs.</p>
  <div class="scroll"><table id="tbl"><colgroup id="cg"></colgroup><thead><tr>
-  <th>Dealer</th><th>Region</th><th class="n" title="TV / digital screens (edit the count)">TV</th><th class="n" title="A0 clip-on poster frames (edit the count)">A0</th><th class="n" title="N-Line branded display spaces (edit the count)">NL</th><th>Register</th><th>HQ owner</th><th>Last follow-up</th><th>A0 posters</th><th>Billboard</th><th>TV content</th><th>N-Line vehicle</th><th>Asset audit</th><th>Proofs</th>
+  <th>Dealer</th><th>Region</th><th class="n" title="TV / digital screens (edit the count)">TV</th><th class="n" title="A0 clip-on poster frames (edit the count)">A0</th><th class="n" title="N-Line branded display spaces (edit the count)">NL</th><th>Register</th><th>HQ owner</th><th>Last follow-up</th><th>A0 posters</th><th>Billboard</th><th>TV content</th><th>N-Line vehicle</th><th>Asset audit</th>
  </tr></thead><tbody id="rows"></tbody></table></div>
  <p class="note" id="foot"></p>
 </div></main>
@@ -327,7 +328,7 @@ function syncFromAssets(d){const a=audit(d);
 function auditHTML(d){if(!d.id)return '';const a=audit(d),cd=code(d);
  return `<div class="log" id="audit"><h3 class="ah">Asset audit · ${esc(mLabel(S.month))}</h3><p class="note" style="margin:2px 0 8px">What is showing on each screen, frame and stand right now. Picking content ticks it as seen this month. Change the counts above to add or remove lines.</p>`+
  KIND3.map(([k,ab,f,title])=>{const n=a[k].n;if(!n)return '';const L=k==='tv'?cat().tv:k==='a0'?cat().a0:cat().nl;
-  return `<div class="agrp"><div class="agh"><b>${title}</b><span>${a[k].seen} of ${n} seen this month</span></div>`+a[k].A.map((x,i)=>`<div class="arow" data-k="${k}" data-i="${i}"><span class="aid">${cd}-${ab}-${String(i+1).padStart(2,'0')}</span><input class="aloc" placeholder="Location, e.g. showroom entrance" value="${esc(x.loc)}"><select class="ac ${x.c?(x.c===L[0]?'c-g':'c-a'):''}">${opts(['',...L],x.c)}</select><input class="adet" placeholder="Detail, e.g. Creta N Line, Dec offer" value="${esc(x.det)}"><label class="aseen"><input type="checkbox" ${x.m===S.month?'checked':''}> Seen</label></div>`).join('')+`</div>`}).join('')+
+  return `<div class="agrp"><div class="agh"><b>${title}</b><span>${a[k].seen} of ${n} seen this month</span></div>`+a[k].A.map((x,i)=>`<div class="arow" data-k="${k}" data-i="${i}"><span class="aid">${cd}-${ab}-${String(i+1).padStart(2,'0')}</span><input class="aloc" placeholder="Location, e.g. showroom entrance" value="${esc(x.loc)}"><select class="ac ${x.c?(x.c===L[0]?'c-g':'c-a'):''}">${opts(['',...L],x.c)}</select><input class="adet" placeholder="Detail, e.g. Creta N Line, Dec offer" value="${esc(x.det)}"><label class="aseen"><input type="checkbox" ${x.m===S.month?'checked':''}> Seen</label>${(()=>{const aid=`${cd}-${ab}-${String(i+1).padStart(2,'0')}`,n=(d.proofs||[]).filter(p=>p.asset===aid).length;return `<button type="button" class="pf aph ${n?'has':''}" data-ph="${aid}" title="Photo proof for ${aid}">📷${n?' '+n:''}</button>`})()}</div>`).join('')+`</div>`}).join('')+
  (a.tv.n+a.a0.n+a.nl.n?'':'<p class="empty">Add TV, A0 or N-Line counts above, then save and reopen to audit each one.</p>')+`</div>`}
 applyCatalog();
 const today=()=>new Date().toISOString().slice(0,10);
@@ -405,12 +406,12 @@ function row(d){const [h,ht]=health(d),od=overdue(d);
  <td><select data-f="tvSt" class="${cc('tvSt',d)}">${opts(TVS,d.tvSt)}</select></td>
  <td><select data-f="nlVeh" class="${cc('nlVeh',d)}">${opts(NLV,d.nlVeh)}</select></td>
  <td>${(()=>{const a=audit(d),n=a.tv.n+a.a0.n+a.nl.n;return n?`<button type="button" class="pf aud ${auditCls(a)}" data-aud title="Seen this month">TV ${a.tv.seen}/${a.tv.n} · A0 ${a.a0.seen}/${a.a0.n} · NL ${a.nl.seen}/${a.nl.n}</button>`:'<span class="empty">No assets</span>'})()}</td>
- <td><button type="button" class="pf ${(d.proofs||[]).length?'has':''}" data-pv>${(d.proofs||[]).length?`Preview proofs (${(d.proofs||[]).length})`:'Add proof'}</button></td></tr>`;
+</tr>`;
 }
 function list(){
  const q=F.q.toLowerCase();
  const L=S.dealers.filter(d=>(!F.r||d.region===F.r)&&(!F.s||d.reg===F.s)&&(!F.o||d.owner===F.o)&&(!F.h||health(d)[0]===F.h)&&(!F.od||overdue(d))&&(!q||[d.branch,d.contact,d.notes,d.email,d.owner,d.nlVeh,d.a0Ad].join(' ').toLowerCase().includes(q)));
- $('#rows').innerHTML=L.length?L.map(row).join(''):'<tr><td colspan="14" class="empty">No dealers match these filters.</td></tr>';
+ $('#rows').innerHTML=L.length?L.map(row).join(''):'<tr><td colspan="13" class="empty">No dealers match these filters.</td></tr>';
  $('#ownlist').innerHTML=owners().map(o=>`<option value="${esc(o)}">`).join('');
  $('#foot').textContent=`Showing ${L.length} of ${S.dealers.length} dealers. Edit the TV, A0 and NL counts straight in the table; the charts update as you type. Click a dealer name for contacts, poster details, billboard details, proofs and the engagement log.${S.updated?' Last saved '+new Date(S.updated).toLocaleString('en-ZA',{dateStyle:'medium',timeStyle:'short'})+(S.updatedBy?' by '+S.updatedBy:'')+'.':''}`;
 }
@@ -522,7 +523,7 @@ $('#kf').addEventListener('submit',async e=>{e.preventDefault();const f=e.target
   const x=await api(DATA()).catch(()=>null);if(x){gsha=x.sha;const r2=JSON.parse(unb64(x.content));S=migrate(r2);base=r2.updated||'';all()}let l=null;try{l=JSON.parse(localStorage.getItem('dbat-local')||'null')}catch(z){}if(l&&l.S&&(l.base||'')===base){S=migrate(l.S);all();pending=true;await save();try{localStorage.removeItem('dbat-local')}catch(z){}toast('Connected. Your device changes are now shared with the team.');return}st('Connected · edits save to GitHub');toast('Connected. Your edits now save for everyone.')}
  catch(x){$('#kmsg').textContent='GitHub rejected that key. Check it is correct and not expired.'}});
 /* resizable columns: drag the line at a header's right edge, or focus it and use the arrow keys */
-const COLW=[160,110,62,62,62,140,130,140,200,120,160,160,190,150];
+const COLW=[160,110,62,62,62,140,130,140,200,120,160,160,200];
 let CW=null;try{CW=JSON.parse(localStorage.getItem('dbat-cw')||'null')}catch(e){}
 if(!Array.isArray(CW)||CW.length!==COLW.length)CW=[...COLW];
 const saveW=()=>{try{localStorage.setItem('dbat-cw',JSON.stringify(CW))}catch(e){}};
@@ -553,6 +554,8 @@ $('#pw').addEventListener('click',()=>{const has=S.dealers.find(d=>(d.proofs||[]
 $('#dpv').addEventListener('click',()=>{if(cur)openV(cur.id)});
 
 document.addEventListener('change',e=>{const r=e.target.closest&&e.target.closest('.arow');if(!r)return;if(e.target.classList.contains('ac')){const L=r.dataset.k==='tv'?cat().tv:r.dataset.k==='a0'?cat().a0:cat().nl;e.target.className='ac '+(e.target.value?(e.target.value===L[0]?'c-g':'c-a'):'');if(e.target.value)r.querySelector('.aseen input').checked=true}});
+let PA=null;
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-ph]');if(!b||!cur)return;PA=b.dataset.ph;const k=b.closest('.arow').dataset.k;openV(cur.id,k);const P=cur.proofs.filter(p=>p.asset===PA);if(P.length){const all=cur.proofs.filter(p=>p.k===k);V.i=all.indexOf(P[P.length-1]);renderV()}});
 function readAudit(d){ensureAssets(d);let changed=0;document.querySelectorAll('#audit .arow').forEach(r=>{const x=d.assets[r.dataset.k][+r.dataset.i];if(!x)return;
  const nv={loc:r.querySelector('.aloc').value.trim(),c:r.querySelector('.ac').value,det:r.querySelector('.adet').value.trim(),m:r.querySelector('.aseen input').checked?S.month:(x.m===S.month?'':x.m)};
  if(nv.c!==x.c||nv.m!==x.m||nv.det!==x.det||nv.loc!==x.loc)changed++;Object.assign(x,nv)});
@@ -614,17 +617,17 @@ function renderV(){const d=S.dealers.find(x=>x.id===V.id);if(!d)return;const P=d
  $('#vtabs').innerHTML=KINDS.map(([k,l])=>`<button type="button" data-k="${k}" class="${k===V.k?'on':''}">${esc(l)} (${d.proofs.filter(x=>x.k===k).length})</button>`).join('');
  $('#vstage').innerHTML=p?media(p,true):`<span>No ${esc(KN[V.k].toLowerCase())} proof yet</span>`;
  const [sf,af]=AD[V.k];
- $('#vcap').innerHTML=`<b>${esc(KN[V.k])}:</b> ${esc(d[sf]||'')}${d[af]?` · <b>${V.k==='nl'?'Vehicle':'Advert'}:</b> ${esc(d[af])}`:''}${p?` · uploaded ${esc(fmtD(p.d))} · ${esc(p.name)} · ${V.i+1} of ${P.length}`:''}`;
+ $('#vcap').innerHTML=`${p&&p.asset?`<b>${esc(p.asset)}</b> · `:''}<b>${esc(KN[V.k])}:</b> ${esc(d[sf]||'')}${d[af]?` · <b>${V.k==='nl'?'Vehicle':'Advert'}:</b> ${esc(d[af])}`:''}${p?` · uploaded ${esc(fmtD(p.d))} · ${esc(p.name)} · ${V.i+1} of ${P.length}`:''}`;
  $('#vthumbs').innerHTML=P.map((x,i)=>`<button type="button" data-i="${i}" class="${i===V.i?'on':''}" aria-label="Proof ${i+1}">${media(x)}</button>`).join('');
  $('#drop').style.display=GH?'':'none';$('#vdel').style.display=canEdit()&&p?'':'none';vdelArm=false;$('#vdel').textContent='Delete this proof';
- $('#dmsg').textContent=`Drop ${KN[V.k]} photos or a short video here`;
+ $('#dmsg').textContent=PA?`Drop the photo for ${PA} here`:`Drop ${KN[V.k]} photos or a short video here`;
  $('#vprev').disabled=V.i<=0;$('#vnext').disabled=V.i>=P.length-1}
 $('#vtabs').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;V.k=b.dataset.k;V.i=1e9;renderV()});
 $('#vthumbs').addEventListener('click',e=>{const b=e.target.closest('[data-i]');if(b){V.i=+b.dataset.i;renderV()}});
 $('#vprev').addEventListener('click',()=>{V.i--;renderV()});$('#vnext').addEventListener('click',()=>{V.i++;renderV()});
 $('#vw').addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='ArrowLeft'&&!$('#vprev').disabled){V.i--;renderV()}if(e.key==='ArrowRight'&&!$('#vnext').disabled){V.i++;renderV()}});
 function closeV(){if($('#vw').open)$('#vw').close();afterV()}
-function afterV(){if($('#dlg').open)ptiles(cur);list();wall();if(pending)touch()}
+function afterV(){PA=null;if($('#dlg').open){ptiles(cur);document.querySelectorAll('#audit [data-ph]').forEach(b=>{const n=(cur.proofs||[]).filter(p=>p.asset===b.dataset.ph).length;b.textContent='📷'+(n?' '+n:'');b.classList.toggle('has',!!n)})}list();wall();if(pending)touch()}
 $('#vclose').addEventListener('click',closeV);$('#vw').addEventListener('close',afterV);
 function logTo(d,txt){const e={d:today(),t:txt};d.log.unshift(e);if($('#dlg').open&&cur===d)$('#fields')._log.unshift(e)}
 async function shrink(f){if(!/^image\/(jpeg|png|webp|gif)$/.test(f.type)&&/^image\//.test(f.type)===false)return f;
@@ -638,10 +641,10 @@ async function upload(files){if(!canEdit()){toast('Proof photos are stored on Gi
   try{if(!/^(image\/(jpeg|png|webp|gif)|video\/(mp4|webm)|application\/pdf)$/.test(f.type)){toast(`${f.name}: use JPG, PNG, WebP, MP4 or PDF`);continue}
    const b=await shrink(f);if(b.size>20e6){toast(`${f.name} is over 20 MB`);continue}
    const ext=(b.type==='image/jpeg'?'jpg':(b.type.split('/')[1]||'bin')).replace('jpeg','jpg');
-   const rel=`proofs/${d.id}/${Date.now()}-${V.k}-${(f.name||'proof').replace(/\.[^.]+$/,'').replace(/[^a-z0-9-]+/gi,'-').slice(0,40)}.${ext}`;
+   const rel=`proofs/${d.id}/${Date.now()}-${PA||V.k}-${(f.name||'proof').replace(/\.[^.]+$/,'').replace(/[^a-z0-9-]+/gi,'-').slice(0,40)}.${ext}`;
    await api(GH.pre+rel,{method:'PUT',body:JSON.stringify({message:`Proof: ${d.branch} · ${KN[V.k]} (by ${KEY.name||'editor'})`,content:await toB64(b)})});
    LOCAL[rel]=URL.createObjectURL(b);
-   d.proofs.push({id:rel,k:V.k,name:f.name||'proof',ct:b.type,d:today(),by:KEY.name||'',month:S.month});logTo(d,`Proof added: ${KN[V.k]}`);pending=true;V.i=1e9}
+   d.proofs.push({id:rel,k:V.k,name:f.name||'proof',ct:b.type,d:today(),by:KEY.name||'',month:S.month,asset:PA||''});logTo(d,`Proof added: ${KN[V.k]}`);pending=true;V.i=1e9}
   catch(er){toast(er.status===401||er.status===403?'Access key rejected. Reconnect with 🔑':`Could not upload ${f.name}`)}}
  $('#dmsg').textContent=`Drop ${KN[V.k]} photos or a short video here`;renderV();summary()}
 $('#vf').addEventListener('change',e=>{upload(e.target.files);e.target.value=''});
